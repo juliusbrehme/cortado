@@ -62,6 +62,7 @@ import { ToasterComponent } from './components/toast/toaster/toaster.component';
 import { PerformanceProgressBarComponent } from './components/performance/performance-progress-bar/performance-progress-bar.component';
 import { VariantQueryInfoComponent } from './components/variant-explorer/variant-query/query-info/variant-query-info/variant-query-info.component';
 import { VariantExplorerContextMenuComponent } from './components/variant-explorer/variant-explorer-context-menu/variant-explorer-context-menu.component';
+import { VariantModelerContextMenuComponent } from './components/variant-modeler/variant-modeler-context-menu/variant-modeler-context-menu.component';
 import { SyntaxHighlightedTextareaDirective } from './directives/syntax-highlighted-textarea/syntax-highlighted-textarea.directive';
 import { VariantDrawerDirective } from './directives/variant-drawer/variant-drawer.directive';
 import { ProcessTreeDrawerDirective } from './directives/process-tree-drawer/process-tree-drawer.directive';
@@ -108,6 +109,7 @@ import { VariantVisualisationComponent } from './components/variant-explorer/var
 import { LogExporterDialogComponent } from './components/log-exporter-dialog/log-exporter-dialog/log-exporter-dialog.component';
 import { EnumToArrayPipe } from './pipes/enum-to-array.pipe';
 
+
 @NgModule({
   declarations: [
     AppComponent,
@@ -143,6 +145,7 @@ import { EnumToArrayPipe } from './pipes/enum-to-array.pipe';
     VariantConformanceDialogComponent,
     TreeStringRendererComponent,
     VariantModelerComponent,
+    VariantModelerContextMenuComponent,
     VariantDrawerDirective,
     SyntaxHighlightedTextareaDirective,
     ActivityButtonAreaComponent,
@@ -159,6 +162,7 @@ import { EnumToArrayPipe } from './pipes/enum-to-array.pipe';
     ToasterComponent,
     PerformanceProgressBarComponent,
     VariantExplorerContextMenuComponent,
+    
     ProcessTreeDrawerDirective,
     BpmnDrawerDirective,
     TreePerformanceButtonComponent,

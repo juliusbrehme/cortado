@@ -1,0 +1,56 @@
+<context-menu #contextMenu menuClass="custom-style">
+  <!--
+  <ng-template contextMenuItem [subMenu]="quickActionMenu">
+    <div>
+      <i class="bi bi-magic"></i>
+      Quick actions
+    </div>
+  </ng-template>
+ 
+  <ng-template contextMenuItem [subMenu]="shiftSubMenu">
+    <div>
+      <i class="bi bi-arrows-move"></i>
+      Shift
+    </div>
+  </ng-template>
+  -->
+
+  <ng-template contextMenuItem [divider]="true"></ng-template>
+
+  <ng-template
+    contextMenuItem
+    (execute)="onCopy($event)"
+    [disabled]="copyDisabled"
+  >
+    <div>
+      <i class="bi bi-copy"></i>
+      Copy
+    </div>
+  </ng-template>
+  <ng-template
+    contextMenuItem
+    (execute)="onPaste($event)"
+    [disabled]="pasteDisabled"
+  >
+    <div>
+      <i class="bi bi-clipboard2-fill"></i>
+      Paste
+    </div>
+  </ng-template>
+
+  <ng-template contextMenuItem [divider]="true"></ng-template>
+
+  <ng-template
+    contextMenuItem
+    (execute)="onDelete($event)"
+    [disabled]="deleteDisabled"
+    let-value
+  >
+    <div>
+      <i
+        class="bi bi-trash"
+        [ngClass]="!deleteDisabled(value) ? 'text-warning' : ''"
+      ></i>
+      Delete
+    </div>
+  </ng-template>

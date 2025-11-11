@@ -306,6 +306,10 @@
   >
   </app-activity-button-area>
 
+  <app-variant-modeler-context-menu
+      #contextMenuComponent
+  ></app-variant-modeler-context-menu>
+
   <app-zoom-field
     [zoomScale]="[0.1, 3]"
     [computeFocusOffsets]="computeFocusOffset"
@@ -316,12 +320,14 @@
       appVariantDrawer
       id="VariantMainGroup"
       [variant]="{ variant: currentVariant }"
+      [contextMenuComponent]="contextMenuComponent"
       (selection)="handleRedraw($event)"
       [computeActivityColor]="computeActivityColor"
       [infixType]="curInfixType"
       [keepStandardView]="true"
       class="zoom-group-variant in-variant-modeler"
-    ></svg>
+    >
+  </svg>
   </app-zoom-field>
   <div class="redundancy-warning" @fadeIn *ngIf="redundancyWarning">
     This variant already exists

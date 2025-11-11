@@ -40,6 +40,9 @@ import { takeUntil } from 'rxjs/operators';
 import { IVariant } from 'src/app/objects/Variants/variant_interface';
 import { ConformanceCheckingService } from 'src/app/services/conformanceChecking/conformance-checking.service';
 import { VariantService } from '../../services/variantService/variant.service';
+import { ContextMenuService } from '@perfectmemory/ngx-contextmenu';
+import { Variant } from 'src/app/objects/Variants/variant';
+import { VariantModelerContextMenuComponent } from 'src/app/components/variant-modeler/variant-modeler-context-menu/variant-modeler-context-menu.component';
 
 @Directive({
   selector: '[appVariantDrawer]',
@@ -60,7 +63,8 @@ export class VariantDrawerDirective
     private sharedDataService: SharedDataService, //edited
     private variantViewModeService: VariantViewModeService,
     private conformanceCheckingService: ConformanceCheckingService,
-    private variantService: VariantService
+    private variantService: VariantService,
+    private contextMenuService: ContextMenuService<any>
   ) {
     this.svgHtmlElement = elRef;
   }
@@ -69,6 +73,9 @@ export class VariantDrawerDirective
 
   @Input()
   variant: IVariant;
+
+  @Input()
+  contextMenuComponent: any;
 
   @Input()
   traceInfixSelectionMode: boolean = false;
@@ -303,6 +310,8 @@ export class VariantDrawerDirective
   ): void {
     svgElement.datum(element).classed('variant-element-group', true);
 
+    
+
     if (element instanceof ParallelGroup) {
       this.drawParallelGroup(element.asParallelGroup(), svgElement);
     } else if (element instanceof ChoiceGroup) {
@@ -516,10 +525,20 @@ export class VariantDrawerDirective
       this.onMouseOverCbFc(this, element, this.variant, parent);
     }
 
-    if (this.onRightMouseClickCbFc) {
+    if (this.onRightMouseClickCbFc || this.contextMenuComponent) {
       parent.on('contextmenu', (e: PointerEvent) => {
-        this.onRightMouseClickCbFc(this, element, this.variant, e);
+        e.preventDefault();
         e.stopPropagation();
+        if (this.onRightMouseClickCbFc) {
+          this.onRightMouseClickCbFc(this, element, this.variant, e);
+        }
+        if (this.contextMenuComponent?.contextMenu) {
+          this.contextMenuService.show(this.contextMenuComponent.contextMenu, {
+            value: element,
+            x: (e as any).x || (e as any).clientX,
+            y: (e as any).y || (e as any).clientY,
+          });
+        }
       });
     }
   }
@@ -561,10 +580,20 @@ export class VariantDrawerDirective
       });
     }
 
-    if (this.onRightMouseClickCbFc) {
+    if (this.onRightMouseClickCbFc || this.contextMenuComponent) {
       parent.on('contextmenu', (e: PointerEvent) => {
-        this.onRightMouseClickCbFc(this, element, this.variant, e);
+        e.preventDefault();
         e.stopPropagation();
+        if (this.onRightMouseClickCbFc) {
+          this.onRightMouseClickCbFc(this, element, this.variant, e);
+        }
+        if (this.contextMenuComponent?.contextMenu) {
+          this.contextMenuService.show(this.contextMenuComponent.contextMenu, {
+            value: element,
+            x: (e as any).x || (e as any).clientX,
+            y: (e as any).y || (e as any).clientY,
+          });
+        }
       });
     }
 
@@ -628,10 +657,20 @@ export class VariantDrawerDirective
       });
     }
 
-    if (this.onRightMouseClickCbFc) {
+    if (this.onRightMouseClickCbFc || this.contextMenuComponent) {
       parent.on('contextmenu', (e: PointerEvent) => {
-        this.onRightMouseClickCbFc(this, element, this.variant, e);
+        e.preventDefault();
         e.stopPropagation();
+        if (this.onRightMouseClickCbFc) {
+          this.onRightMouseClickCbFc(this, element, this.variant, e);
+        }
+        if (this.contextMenuComponent?.contextMenu) {
+          this.contextMenuService.show(this.contextMenuComponent.contextMenu, {
+            value: element,
+            x: (e as any).x || (e as any).clientX,
+            y: (e as any).y || (e as any).clientY,
+          });
+        }
       });
     }
 
@@ -766,10 +805,20 @@ export class VariantDrawerDirective
       });
     }
 
-    if (this.onRightMouseClickCbFc) {
+    if (this.onRightMouseClickCbFc || this.contextMenuComponent) {
       parent.on('contextmenu', (e: PointerEvent) => {
-        this.onRightMouseClickCbFc(this, element, this.variant, e);
+        e.preventDefault();
         e.stopPropagation();
+        if (this.onRightMouseClickCbFc) {
+          this.onRightMouseClickCbFc(this, element, this.variant, e);
+        }
+        if (this.contextMenuComponent?.contextMenu) {
+          this.contextMenuService.show(this.contextMenuComponent.contextMenu, {
+            value: element,
+            x: (e as any).x || (e as any).clientX,
+            y: (e as any).y || (e as any).clientY,
+          });
+        }
       });
     }
 
@@ -1010,10 +1059,20 @@ export class VariantDrawerDirective
       });
     }
 
-    if (this.onRightMouseClickCbFc) {
+    if (this.onRightMouseClickCbFc || this.contextMenuComponent) {
       parent.on('contextmenu', (e: PointerEvent) => {
-        this.onRightMouseClickCbFc(this, element, this.variant, e);
+        e.preventDefault();
         e.stopPropagation();
+        if (this.onRightMouseClickCbFc) {
+          this.onRightMouseClickCbFc(this, element, this.variant, e);
+        }
+        if (this.contextMenuComponent?.contextMenu) {
+          this.contextMenuService.show(this.contextMenuComponent.contextMenu, {
+            value: element,
+            x: (e as any).x || (e as any).clientX,
+            y: (e as any).y || (e as any).clientY,
+          });
+        }
       });
     }
 
