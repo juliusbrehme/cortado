@@ -14,9 +14,7 @@ export class VariantModelerContextMenuComponent {
   @ViewChild('contextMenu', { static: true })
   public contextMenu?: ContextMenuComponent<any>;
 
-  constructor() {
-    
-  }
+  constructor() {}
 
   copyDisabled(pt: ProcessTree) {
     return !pt;
@@ -27,9 +25,8 @@ export class VariantModelerContextMenuComponent {
     // copy
   }
 
-
   pasteDisabled(pt: ProcessTree) {
-    return !pt
+    return !pt;
   }
 
   onPaste(action: ContextMenuAction<ProcessTree>) {
@@ -44,5 +41,4 @@ export class VariantModelerContextMenuComponent {
     if (!action.value) return;
     // delete
   }
-
 }

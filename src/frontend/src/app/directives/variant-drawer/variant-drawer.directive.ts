@@ -310,8 +310,6 @@ export class VariantDrawerDirective
   ): void {
     svgElement.datum(element).classed('variant-element-group', true);
 
-    
-
     if (element instanceof ParallelGroup) {
       this.drawParallelGroup(element.asParallelGroup(), svgElement);
     } else if (element instanceof ChoiceGroup) {

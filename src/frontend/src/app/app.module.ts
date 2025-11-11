@@ -109,7 +109,6 @@ import { VariantVisualisationComponent } from './components/variant-explorer/var
 import { LogExporterDialogComponent } from './components/log-exporter-dialog/log-exporter-dialog/log-exporter-dialog.component';
 import { EnumToArrayPipe } from './pipes/enum-to-array.pipe';
 
-
 @NgModule({
   declarations: [
     AppComponent,
@@ -162,7 +161,7 @@ import { EnumToArrayPipe } from './pipes/enum-to-array.pipe';
     ToasterComponent,
     PerformanceProgressBarComponent,
     VariantExplorerContextMenuComponent,
-    
+
     ProcessTreeDrawerDirective,
     BpmnDrawerDirective,
     TreePerformanceButtonComponent,
