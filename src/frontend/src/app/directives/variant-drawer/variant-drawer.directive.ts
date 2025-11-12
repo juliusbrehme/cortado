@@ -75,7 +75,7 @@ export class VariantDrawerDirective
   variant: IVariant;
 
   @Input()
-  contextMenuComponent: any;
+  contextMenuComponent: VariantModelerContextMenuComponent;
 
   @Input()
   traceInfixSelectionMode: boolean = false;

@@ -540,6 +540,15 @@ export class VariantModelerComponent
     }
   }
 
+  // Handler for actions emitted by the variant-modeler context menu
+  onContextMenuAction(event: { action: string; value: any }) {
+    if (!event || !event.action) return;
+
+    if (event.action === 'delete') {
+      this.onDeleteSelected();
+    }
+  }
+
   computeActivityColor = (
     self: VariantDrawerDirective,
     element: VariantElement

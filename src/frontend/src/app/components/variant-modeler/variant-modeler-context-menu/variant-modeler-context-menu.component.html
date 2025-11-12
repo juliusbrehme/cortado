@@ -1,44 +1,33 @@
 <context-menu #contextMenu menuClass="custom-style">
-  <!--
   <ng-template contextMenuItem [subMenu]="quickActionMenu">
     <div>
       <i class="bi bi-magic"></i>
       Quick actions
     </div>
   </ng-template>
- 
-  <ng-template contextMenuItem [subMenu]="shiftSubMenu">
-    <div>
-      <i class="bi bi-arrows-move"></i>
-      Shift
-    </div>
-  </ng-template>
-  -->
 
-  <ng-template contextMenuItem [divider]="true"></ng-template>
-
-  <ng-template
+  <context-menu #quickActionMenu>
+    <ng-template
     contextMenuItem
-    (execute)="onCopy($event)"
-    [disabled]="copyDisabled"
-  >
+    (execute)="onMakeOptional($event)"
+    [disabled]="makeOptionalDisabled"
+    >
     <div>
-      <i class="bi bi-copy"></i>
-      Copy
+      <i class="bi bi-question-circle"></i>
+      Make selection optional
     </div>
-  </ng-template>
-  <ng-template
-    contextMenuItem
-    (execute)="onPaste($event)"
-    [disabled]="pasteDisabled"
-  >
-    <div>
-      <i class="bi bi-clipboard2-fill"></i>
-      Paste
-    </div>
-  </ng-template>
-
-  <ng-template contextMenuItem [divider]="true"></ng-template>
+    </ng-template>
+    <ng-template
+      contextMenuItem
+      (execute)="onMakeRepeatable($event)"
+      [disabled]="makeRepeatableDisabled"
+    >
+      <div>
+        <i class="bi bi-repeat"></i>
+        Make selection repeatable
+      </div>
+    </ng-template>
+  </context-menu>
 
   <ng-template
     contextMenuItem

@@ -307,7 +307,8 @@
   </app-activity-button-area>
 
   <app-variant-modeler-context-menu
-      #contextMenuComponent
+    #contextMenuComponent
+    (menuAction)="onContextMenuAction($event)"
   ></app-variant-modeler-context-menu>
 
   <app-zoom-field

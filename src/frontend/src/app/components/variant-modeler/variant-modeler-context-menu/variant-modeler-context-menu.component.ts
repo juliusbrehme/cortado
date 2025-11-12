@@ -1,9 +1,8 @@
-import { Component, ViewChild } from '@angular/core';
+import { Component, ViewChild, Output, EventEmitter } from '@angular/core';
 import { ContextMenuComponent } from '@perfectmemory/ngx-contextmenu';
 import { ContextMenuAction } from 'src/app/objects/ContextMenuAction';
-import { ProcessTree } from 'src/app/objects/ProcessTree/ProcessTree';
+import { Variant } from 'src/app/objects/Variants/variant';
 import { VariantElement } from 'src/app/objects/Variants/variant_element';
-import { ProcessTreeService } from 'src/app/services/processTreeService/process-tree.service';
 
 @Component({
   selector: 'app-variant-modeler-context-menu',
@@ -16,29 +15,37 @@ export class VariantModelerContextMenuComponent {
 
   constructor() {}
 
-  copyDisabled(pt: ProcessTree) {
-    return !pt;
+  deleteDisabled(element: VariantElement) {
+    return !element;
   }
 
-  onCopy(action: ContextMenuAction<ProcessTree>) {
+  @Output()
+  public menuAction: EventEmitter<{ action: string; value: any }> =
+    new EventEmitter();
+
+  onDelete(action: ContextMenuAction<VariantElement>) {
+    console.log('onDelete action:', action);
     if (!action.value) return;
-    // copy
+    // emit a delete action to the parent VariantModelerComponent which performs
+    // the actual model mutation (keeps this component UI-only)
+    this.menuAction.emit({ action: 'delete', value: action.value });
   }
 
-  pasteDisabled(pt: ProcessTree) {
-    return !pt;
-  }
-
-  onPaste(action: ContextMenuAction<ProcessTree>) {
-    // paste
-  }
-
-  deleteDisabled(pt: ProcessTree) {
-    return !pt;
-  }
-
-  onDelete(action: ContextMenuAction<ProcessTree>) {
+  onMakeOptional(action: ContextMenuAction<VariantElement>) {
     if (!action.value) return;
-    // delete
+    // make optional
+  }
+
+  onMakeRepeatable(action: ContextMenuAction<VariantElement>) {
+    if (!action.value) return;
+    // make repeatable
+  }
+
+  makeOptionalDisabled(element: VariantElement) {
+    return !element;
+  }
+
+  makeRepeatableDisabled(element: VariantElement) {
+    return !element;
   }
 }
