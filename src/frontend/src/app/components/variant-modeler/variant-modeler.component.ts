@@ -32,6 +32,8 @@ import {
   ParallelGroup,
   SequenceGroup,
   VariantElement,
+  ChoiceGroup,
+  OperatorGroup,
 } from 'src/app/objects/Variants/variant_element';
 import { collapsingText, fadeInText } from 'src/app/animations/text-animations';
 import { findPathToSelectedNode } from 'src/app/objects/Variants/utility_functions';
@@ -118,6 +120,9 @@ export class VariantModelerComponent
           this.activityNames.sort();
         }
       });
+
+    // Test adding a wildcard default activity
+    this.activityNames.push('WILDCARD');
 
     this.logService.loadedEventLog$
       .pipe(takeUntil(this._destroy$))
@@ -540,12 +545,132 @@ export class VariantModelerComponent
     }
   }
 
+  onOperatorSelected(operatorType: string) {
+    const selectedElements = this.variantEnrichedSelection
+      .selectAll('.selected-variant-g')
+      .data();
+
+    // If nothing selected, nothing to do
+    if (!selectedElements || selectedElements.length === 0) return;
+
+    // We want only one parent so we select just one and check if the selection is valid
+    const parent = this.findParent(this.currentVariant, selectedElements[0]);
+    const children = parent.getElements();
+    
+    if (!parent) return;
+
+    // If our selection is within an OperatorGroup, we do not allow nesting
+    if (parent instanceof OperatorGroup){
+      // We toggle the operator on the existing OperatorGroup
+      if (operatorType === 'repeatable'){
+        parent.toggleRepeatable();
+      } else if (operatorType === 'optional'){
+        parent.toggleOptional();
+      }
+      // If we toggled off both operators, we remove the OperatorGroup
+      if (parent.getRepeatable() === false && parent.getOptional() === false){
+        // If both operators are off, we remove the OperatorGroup
+        const grandParent = this.findParent(this.currentVariant, parent);
+        const grandChildren = grandParent.getElements();
+        const parentIdx = grandChildren.indexOf(parent);
+        // Remove the OperatorGroup and insert its children in its place
+        grandChildren.splice(parentIdx, 1, ...parent.getElements());
+        grandParent.setElements(grandChildren);
+      }
+      this.cacheCurrentVariant();
+      this.triggerRedraw();
+      return;
+    }
+
+    // The index where to insert the OperatorGroup
+    let first_idx = -1;
+    // Check if all selected elements have the same parent and are continuous
+    let current_idx = -1;
+    for (const leaf of selectedElements) {
+      const leaf_parent = this.findParent(this.currentVariant, leaf);
+      if (parent !== leaf_parent) return;
+      const idx = children.indexOf(leaf);
+      if (current_idx == -1) {
+        current_idx = idx;
+        first_idx = idx;
+      }
+      else if (idx !== current_idx + 1) {
+        // Not continuous selection
+        return;
+      }
+      if (idx === -1) return;
+    }
+
+    // Remove selected elements from parent's children
+    children.splice(first_idx, selectedElements.length);
+
+    const operator = new OperatorGroup(selectedElements as VariantElement[]);
+    if (operatorType === 'repeatable'){
+      operator.toggleRepeatable();
+    } else if (operatorType === 'optional'){
+      operator.toggleOptional();
+    }
+    
+    children.splice(first_idx, 0, operator);
+    parent.setElements(children);
+    
+    this.cacheCurrentVariant();
+    this.triggerRedraw();
+  }
+
+  onRepeatableSelected() {
+    this.onOperatorSelected('repeatable');
+  }
+
+  onOptionalSelected() {
+    this.onOperatorSelected('optional');
+  }
+
+  onChoiceSelected() {
+    const selectedElements = this.variantEnrichedSelection
+      .selectAll('.selected-variant-g')
+      .data();
+    // If nothing selected, nothing to do
+    if (!selectedElements || selectedElements.length === 0) return;
+    // If selection is a single LeafNode, replace it by a ChoiceGroup containing that element and an empty LeafNode
+    if (selectedElements.length === 1 && selectedElements[0] instanceof LeafNode) {
+      const leaf = selectedElements[0] as LeafNode;
+      const parent = this.findParent(this.currentVariant, leaf);
+      if (!parent) return;
+
+      const children = parent.getElements();
+      const idx = children.indexOf(leaf);
+      if (idx === -1) return;
+
+      // Replace the leaf with a ChoiceGroup containing the leaf and an empty LeafNode
+      const emptyLeaf = new LeafNode(['']);
+      const choice = new ChoiceGroup([leaf, emptyLeaf]);
+      children.splice(idx, 1, choice);
+      parent.setElements(children);
+      this.cacheCurrentVariant();
+      this.triggerRedraw();
+      return;
+    }
+  }
+
   // Handler for actions emitted by the variant-modeler context menu
   onContextMenuAction(event: { action: string; value: any }) {
     if (!event || !event.action) return;
 
     if (event.action === 'delete') {
       this.onDeleteSelected();
+    }
+
+    if (event.action === 'repeatable') {
+      this.onRepeatableSelected();
+    }
+
+    if (event.action === 'optional') {
+      this.onOptionalSelected();
+    }
+
+    if (event.action === 'choice') {
+      this.onChoiceSelected();
     }
   }
 

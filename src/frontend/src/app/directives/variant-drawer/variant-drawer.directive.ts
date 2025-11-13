@@ -26,6 +26,7 @@ import {
   InvisibleSequenceGroup,
   LeafNode,
   LoopGroup,
+  OperatorGroup,
   ParallelGroup,
   SequenceGroup,
   SkipGroup,
@@ -49,8 +50,7 @@ import { VariantModelerContextMenuComponent } from 'src/app/components/variant-m
   exportAs: 'variantDrawer',
 })
 export class VariantDrawerDirective
-  implements AfterViewInit, OnChanges, OnDestroy
-{
+  implements AfterViewInit, OnChanges, OnDestroy {
   setExpanded(expanded: boolean) {
     this.variant.variant.setExpanded(expanded);
     this.variant.alignment?.setExpanded(expanded);
@@ -122,6 +122,9 @@ export class VariantDrawerDirective
   @Output()
   selection = new EventEmitter<Selection<any, any, any, any>>();
 
+  @Output()
+  operatorAction = new EventEmitter<{ action: string; elements: any[] }>();
+
   @Output() redrawArcsIfComputed = new EventEmitter();
 
   svgSelection!: Selection<any, any, any, any>;
@@ -177,11 +180,11 @@ export class VariantDrawerDirective
     if (this.variant.variant) {
       const height = this.variant.variant.recalculateHeight(
         !this.keepStandardView &&
-          this.variantViewModeService.viewMode === ViewMode.PERFORMANCE
+        this.variantViewModeService.viewMode === ViewMode.PERFORMANCE
       );
       const width = this.variant.variant.recalculateWidth(
         !this.keepStandardView &&
-          this.variantViewModeService.viewMode === ViewMode.PERFORMANCE
+        this.variantViewModeService.viewMode === ViewMode.PERFORMANCE
       );
 
       if (
@@ -196,7 +199,7 @@ export class VariantDrawerDirective
       const svg_container = d3.select(this.svgHtmlElement.nativeElement);
       this.variant.variant.updateWidth(
         !this.keepStandardView &&
-          this.variantViewModeService.viewMode === ViewMode.PERFORMANCE
+        this.variantViewModeService.viewMode === ViewMode.PERFORMANCE
       );
 
       const [svg, width_offset] = this.handleInfix(
@@ -330,6 +333,199 @@ export class VariantDrawerDirective
       this.drawLoopGroup(element.asLoopGroup(), svgElement);
     } else if (element instanceof SkipGroup) {
       this.drawSkipGroup(element.asSkipGroup(), svgElement);
+    } else if (element instanceof OperatorGroup) {
+      this.drawOperatorGroup(element.asOperatorGroup(), svgElement);
+    }
+  }
+
+  public drawOperatorGroup(
+    element: OperatorGroup,
+    parent: Selection<any, any, any, any>
+  ): void {
+    const width = element.getWidth();
+    const height = element.getHeight();
+    
+    const repeatable = element.getRepeatable();
+    const optional = element.getOptional();
+
+    const polygonPoints = this.polygonService.getPolygonPoints(width, height);
+
+    const operatorColor = "transparent";
+    let laElement = getLowestSelectionActionableElement(element);
+    let actionable =
+      laElement.parent !== null &&
+      laElement.infixSelectableState !== SelectableState.None;
+
+    let polygon = this.createPolygon(
+      parent,
+      polygonPoints,
+      operatorColor,
+      actionable,
+      true
+    );
+    polygon.style('stroke-dasharray', '4 2').style('stroke', 'gray').style('fill', 'transparent').style('stroke-width', '3px');
+
+    if (
+      this.traceInfixSelectionMode &&
+      element.parent &&
+      !(element instanceof InvisibleSequenceGroup)
+    ) {
+      this.addInfixSelectionAttributes(element, polygon, false);
+    }
+
+    if (
+      element instanceof InvisibleSequenceGroup ||
+      element.parent instanceof SkipGroup
+    ) {
+      polygon.style('fill', 'transparent');
+    } else {
+      if (this.onClickCbFc) {
+        parent.on('click', (e: PointerEvent) => {
+          this.onVariantClick(element);
+          e.stopPropagation();
+        });
+      }
+    }
+
+    let xOffset = 0;
+
+    const inEditor =
+      d3
+        .select(this.svgHtmlElement.nativeElement)
+        .classed('in-variant-modeler') ||
+      d3.select(this.svgHtmlElement.nativeElement).classed('pattern-variant');
+
+    if (
+      (inEditor ||
+        (!this.keepStandardView &&
+          this.variantViewModeService.viewMode === ViewMode.PERFORMANCE)) &&
+      !(element.parent instanceof SkipGroup)
+    ) {
+      xOffset +=
+        element.getHeadLength() +
+        element.getMarginX() -
+        element.elements[0].getHeadLength();
+    }
+
+    for (const child of element.elements) {
+      if (
+        child instanceof WaitingTimeNode &&
+        (this.keepStandardView ||
+          this.variantViewModeService.viewMode !== ViewMode.PERFORMANCE)
+      ) {
+        continue;
+      }
+
+      const childWidth = child.getWidth(
+        !this.keepStandardView &&
+        this.variantViewModeService.viewMode === ViewMode.PERFORMANCE
+      );
+      const childHeight = child.getHeight();
+      const yOffset = height / 2 - childHeight / 2;
+      const g = parent
+        .append('g')
+        .attr('transform', `translate(${xOffset}, ${yOffset})`);
+
+      this.draw(child, g, false);
+      xOffset += childWidth;
+    }
+
+    if (this.onClickCbFc) {
+      parent.on('click', (e: PointerEvent) => {
+        this.onVariantClick(element);
+        e.stopPropagation();
+      });
+    }
+
+    if (this.onRightMouseClickCbFc || this.contextMenuComponent) {
+      parent.on('contextmenu', (e: PointerEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (this.onRightMouseClickCbFc) {
+          this.onRightMouseClickCbFc(this, element, this.variant, e);
+        }
+        if (this.contextMenuComponent?.contextMenu) {
+          this.contextMenuService.show(this.contextMenuComponent.contextMenu, {
+            value: element,
+            x: (e as any).x || (e as any).clientX,
+            y: (e as any).y || (e as any).clientY,
+          });
+        }
+      });
+    }
+
+    // Add small operator icons at the top-right of the wrapper
+    const iconsGroup = parent.append('g').attr('class', 'operator-icons').style('pointer-events', 'all');
+    const iconSpacing = 18;
+    const rightPadding = 8;
+    const startX = width - rightPadding - iconSpacing;
+    const iconY = VARIANT_Constants.MARGIN_Y / 2;
+
+    // Optional icon (question mark)
+    const optionalGroup = iconsGroup
+      .append('g')
+      .attr('transform', `translate(${startX}, ${iconY})`)
+      .style('cursor', 'pointer');
+    optionalGroup
+      .append('circle')
+      .attr('r', 8)
+      .attr('fill', '#fff')
+      .attr('stroke', '#888')
+      .attr('stroke-width', 1);
+    optionalGroup
+      .append('text')
+      .attr('x', 0)
+      .attr('y', 4)
+      .attr('text-anchor', 'middle')
+      .attr('font-size', 10)
+      .text('?')
+      .attr('fill', '#444')
+      .style('pointer-events', 'none');
+    
+    if (optional) {
+      optionalGroup.style('display', 'inline');
+    } else {
+      optionalGroup.style('display', 'none');
+    }
+
+    optionalGroup.on('click', (e: MouseEvent) => {
+      e.stopPropagation();
+      this.operatorAction.emit({ action: 'optional', elements: element.elements });
+    });
+
+    // Repeatable icon (circular arrow)
+    const repeatGroup = iconsGroup
+      .append('g')
+      .attr('transform', `translate(${startX + iconSpacing}, ${iconY})`)
+      .style('cursor', 'pointer');
+    repeatGroup
+      .append('circle')
+      .attr('r', 8)
+      .attr('fill', '#fff')
+      .attr('stroke', '#888')
+      .attr('stroke-width', 1);
+    repeatGroup
+      .append('text')
+      .attr('x', 0)
+      .attr('y', 4)
+      .attr('text-anchor', 'middle')
+      .attr('font-size', 10)
+      .text('⟲')
+      .attr('fill', '#444')
+      .style('pointer-events', 'none');
+    
+      if (repeatable) {
+      repeatGroup.style('display', 'inline');
+    } else {
+      repeatGroup.style('display', 'none');
+    }
+    repeatGroup.on('click', (e: MouseEvent) => {
+      e.stopPropagation();
+      this.operatorAction.emit({ action: 'repeatable', elements: element.elements });
+    });
+
+    if (this.onMouseOverCbFc) {
+      this.onMouseOverCbFc(this, element, this.variant, parent);
     }
   }
 
@@ -385,7 +581,7 @@ export class VariantDrawerDirective
       y =
         height / 2 -
         ((leafNode.activity.length - 1) / 2) *
-          (VARIANT_Constants.FONT_SIZE + VARIANT_Constants.MARGIN_Y);
+        (VARIANT_Constants.FONT_SIZE + VARIANT_Constants.MARGIN_Y);
     }
 
     parent
@@ -507,7 +703,7 @@ export class VariantDrawerDirective
 
       const childWidth = child.getWidth(
         !this.keepStandardView &&
-          this.variantViewModeService.viewMode === ViewMode.PERFORMANCE
+        this.variantViewModeService.viewMode === ViewMode.PERFORMANCE
       );
       const childHeight = child.getHeight();
       const yOffset = height / 2 - childHeight / 2;
@@ -693,8 +889,8 @@ export class VariantDrawerDirective
       .attr(
         'font-size',
         (VARIANT_Constants.LEAF_HEIGHT + VARIANT_Constants.MARGIN_Y) *
-          element.elements.length +
-          VARIANT_Constants.MARGIN_Y
+        element.elements.length +
+        VARIANT_Constants.MARGIN_Y
       )
       .attr('font-weight', 300)
       .attr('fill', textcolor)
@@ -705,12 +901,12 @@ export class VariantDrawerDirective
       .attr(
         'x',
         element.getHeadLength() +
-          0.5 *
-            (((VARIANT_Constants.LEAF_HEIGHT + VARIANT_Constants.MARGIN_Y) *
-              element.elements.length +
-              VARIANT_Constants.MARGIN_Y) /
-              2.8) +
-          0.5 * VARIANT_Constants.MARGIN_X
+        0.5 *
+        (((VARIANT_Constants.LEAF_HEIGHT + VARIANT_Constants.MARGIN_Y) *
+          element.elements.length +
+          VARIANT_Constants.MARGIN_Y) /
+          2.8) +
+        0.5 * VARIANT_Constants.MARGIN_X
       )
       .attr('y', v_height / 2)
       .classed(
@@ -735,7 +931,7 @@ export class VariantDrawerDirective
         ((VARIANT_Constants.LEAF_HEIGHT + VARIANT_Constants.MARGIN_Y) *
           element.elements.length +
           VARIANT_Constants.MARGIN_Y) /
-          2.8;
+        2.8;
       const g = parent.append('g').attr('transform', `translate(${x}, ${y})`);
       this.draw(child, g, false);
       y += height + VARIANT_Constants.MARGIN_Y;
@@ -746,13 +942,13 @@ export class VariantDrawerDirective
       .attr(
         'x',
         element.getWidth() -
-          element.getHeadLength() -
-          0.5 * VARIANT_Constants.MARGIN_X -
-          0.5 *
-            (((VARIANT_Constants.LEAF_HEIGHT + VARIANT_Constants.MARGIN_Y) *
-              element.elements.length +
-              VARIANT_Constants.MARGIN_Y) /
-              2.8)
+        element.getHeadLength() -
+        0.5 * VARIANT_Constants.MARGIN_X -
+        0.5 *
+        (((VARIANT_Constants.LEAF_HEIGHT + VARIANT_Constants.MARGIN_Y) *
+          element.elements.length +
+          VARIANT_Constants.MARGIN_Y) /
+          2.8)
       )
       .attr('y', v_height / 2)
       .classed(
@@ -933,7 +1129,7 @@ export class VariantDrawerDirective
       y =
         height / 2 -
         ((element.activity.length - 1) / 2) *
-          (VARIANT_Constants.FONT_SIZE + VARIANT_Constants.MARGIN_Y);
+        (VARIANT_Constants.FONT_SIZE + VARIANT_Constants.MARGIN_Y);
     }
 
     let truncated = false;
@@ -1090,7 +1286,7 @@ export class VariantDrawerDirective
     element.elements.forEach((child, idx) => {
       const childWidth = child.getWidth(
         !this.keepStandardView &&
-          this.variantViewModeService.viewMode === ViewMode.PERFORMANCE
+        this.variantViewModeService.viewMode === ViewMode.PERFORMANCE
       );
       const childHeight = child.getHeight();
       const yOffset = height / 2 - childHeight / 2;
@@ -1193,14 +1389,14 @@ export class VariantDrawerDirective
     d3.selectAll('.variant-polygon').classed(
       'cursor-pointer',
       !this.keepStandardView &&
-        this.variantViewModeService.viewMode === ViewMode.PERFORMANCE &&
-        this.addCursorPointer
+      this.variantViewModeService.viewMode === ViewMode.PERFORMANCE &&
+      this.addCursorPointer
     );
     d3.selectAll('.activity-text').classed(
       'cursor-pointer',
       !this.keepStandardView &&
-        this.variantViewModeService.viewMode === ViewMode.PERFORMANCE &&
-        this.addCursorPointer
+      this.variantViewModeService.viewMode === ViewMode.PERFORMANCE &&
+      this.addCursorPointer
     );
   }
 

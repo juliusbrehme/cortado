@@ -13,18 +13,17 @@ export class VariantModelerContextMenuComponent {
   @ViewChild('contextMenu', { static: true })
   public contextMenu?: ContextMenuComponent<any>;
 
+  @Output()
+  public menuAction: EventEmitter<{ action: string; value: any }> =
+    new EventEmitter();
+
   constructor() {}
 
   deleteDisabled(element: VariantElement) {
     return !element;
   }
 
-  @Output()
-  public menuAction: EventEmitter<{ action: string; value: any }> =
-    new EventEmitter();
-
   onDelete(action: ContextMenuAction<VariantElement>) {
-    console.log('onDelete action:', action);
     if (!action.value) return;
     // emit a delete action to the parent VariantModelerComponent which performs
     // the actual model mutation (keeps this component UI-only)
@@ -34,11 +33,13 @@ export class VariantModelerContextMenuComponent {
   onMakeOptional(action: ContextMenuAction<VariantElement>) {
     if (!action.value) return;
     // make optional
+    this.menuAction.emit({ action: 'optional', value: action.value });
   }
 
   onMakeRepeatable(action: ContextMenuAction<VariantElement>) {
     if (!action.value) return;
     // make repeatable
+    this.menuAction.emit({ action: 'repeatable', value: action.value });
   }
 
   makeOptionalDisabled(element: VariantElement) {
