@@ -41,6 +41,8 @@ import { SettingsComponent } from './components/settings/settings.component';
 import { DropZoneDirective } from './directives/drop-zone/drop-zone.directive';
 import { TreeStringRendererComponent } from './components/tree-string-renderer/tree-string-renderer.component';
 import { VariantModelerComponent } from './components/variant-modeler/variant-modeler.component';
+import { VariantQueryModelerComponent } from './components/variant-query-modeler/variant-query-modeler.component';
+import { VariantQueryModelerContextMenuComponent } from './components/variant-query-modeler/variant-query-modeler-context-menu/variant-query-modeler-context-menu.component';
 import { VariantComponent } from './components/variant-explorer/variant/variant.component';
 import { VariantConformanceDialogComponent } from './components/variant-explorer/conformance-info/variant-conformance-dialog/variant-conformance-dialog.component';
 import { BpmnEditorComponent } from './components/bpmn-editor/bpmn-editor.component';
@@ -62,7 +64,6 @@ import { ToasterComponent } from './components/toast/toaster/toaster.component';
 import { PerformanceProgressBarComponent } from './components/performance/performance-progress-bar/performance-progress-bar.component';
 import { VariantQueryInfoComponent } from './components/variant-explorer/variant-query/query-info/variant-query-info/variant-query-info.component';
 import { VariantExplorerContextMenuComponent } from './components/variant-explorer/variant-explorer-context-menu/variant-explorer-context-menu.component';
-import { VariantModelerContextMenuComponent } from './components/variant-modeler/variant-modeler-context-menu/variant-modeler-context-menu.component';
 import { SyntaxHighlightedTextareaDirective } from './directives/syntax-highlighted-textarea/syntax-highlighted-textarea.directive';
 import { VariantDrawerDirective } from './directives/variant-drawer/variant-drawer.directive';
 import { ProcessTreeDrawerDirective } from './directives/process-tree-drawer/process-tree-drawer.directive';
@@ -144,7 +145,6 @@ import { EnumToArrayPipe } from './pipes/enum-to-array.pipe';
     VariantConformanceDialogComponent,
     TreeStringRendererComponent,
     VariantModelerComponent,
-    VariantModelerContextMenuComponent,
     VariantDrawerDirective,
     SyntaxHighlightedTextareaDirective,
     ActivityButtonAreaComponent,
@@ -161,7 +161,8 @@ import { EnumToArrayPipe } from './pipes/enum-to-array.pipe';
     ToasterComponent,
     PerformanceProgressBarComponent,
     VariantExplorerContextMenuComponent,
-
+    VariantQueryModelerComponent,
+    VariantQueryModelerContextMenuComponent,
     ProcessTreeDrawerDirective,
     BpmnDrawerDirective,
     TreePerformanceButtonComponent,

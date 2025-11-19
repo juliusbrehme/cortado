@@ -43,7 +43,7 @@ import { ConformanceCheckingService } from 'src/app/services/conformanceChecking
 import { VariantService } from '../../services/variantService/variant.service';
 import { ContextMenuService } from '@perfectmemory/ngx-contextmenu';
 import { Variant } from 'src/app/objects/Variants/variant';
-import { VariantModelerContextMenuComponent } from 'src/app/components/variant-modeler/variant-modeler-context-menu/variant-modeler-context-menu.component';
+import { VariantQueryModelerContextMenuComponent } from 'src/app/components/variant-query-modeler/variant-query-modeler-context-menu/variant-query-modeler-context-menu.component';
 
 @Directive({
   selector: '[appVariantDrawer]',
@@ -75,7 +75,7 @@ export class VariantDrawerDirective
   variant: IVariant;
 
   @Input()
-  contextMenuComponent: VariantModelerContextMenuComponent;
+  contextMenuComponent: VariantQueryModelerContextMenuComponent;
 
   @Input()
   traceInfixSelectionMode: boolean = false;
@@ -121,9 +121,6 @@ export class VariantDrawerDirective
 
   @Output()
   selection = new EventEmitter<Selection<any, any, any, any>>();
-
-  @Output()
-  operatorAction = new EventEmitter<{ action: string; elements: any[] }>();
 
   @Output() redrawArcsIfComputed = new EventEmitter();
 
@@ -350,7 +347,7 @@ export class VariantDrawerDirective
 
     const polygonPoints = this.polygonService.getPolygonPoints(width, height);
 
-    const operatorColor = "transparent";
+    const operatorColor = "#13F3FF00";
     let laElement = getLowestSelectionActionableElement(element);
     let actionable =
       laElement.parent !== null &&
@@ -363,7 +360,7 @@ export class VariantDrawerDirective
       actionable,
       true
     );
-    polygon.style('stroke-dasharray', '4 2').style('stroke', 'gray').style('fill', 'transparent').style('stroke-width', '3px');
+    polygon.style('stroke-dasharray', '4 2').style('stroke', 'gray').style('stroke-width', '3px');
 
     if (
       this.traceInfixSelectionMode &&
@@ -455,32 +452,37 @@ export class VariantDrawerDirective
     }
 
     // Add small operator icons at the top-right of the wrapper
-    const iconsGroup = parent.append('g').attr('class', 'operator-icons').style('pointer-events', 'all');
-    const iconSpacing = 18;
-    const rightPadding = 8;
-    const startX = width - rightPadding - iconSpacing;
-    const iconY = VARIANT_Constants.MARGIN_Y / 2;
+    const iconsGroup = parent.append('g');
+    const iconSpacing = 33;
 
     // Optional icon (question mark)
+    const optW = 30;
+    const optH = 30;
+    const startX = width - 2*iconSpacing;
+    const iconY = VARIANT_Constants.MARGIN_Y;
+
+    
     const optionalGroup = iconsGroup
       .append('g')
       .attr('transform', `translate(${startX}, ${iconY})`)
       .style('cursor', 'pointer');
+
+    // background rect (rounded)
     optionalGroup
       .append('circle')
-      .attr('r', 8)
-      .attr('fill', '#fff')
-      .attr('stroke', '#888')
-      .attr('stroke-width', 1);
+      .attr('r', optH / 2)
+      .attr('fill', '#ee2525ff')
+      .attr('stroke', '#ffffff');
+
+    // small question mark icon (left inside rect)
     optionalGroup
       .append('text')
-      .attr('x', 0)
-      .attr('y', 4)
-      .attr('text-anchor', 'middle')
-      .attr('font-size', 10)
-      .text('?')
-      .attr('fill', '#444')
-      .style('pointer-events', 'none');
+      .attr('x', - optH / 4 + 3)
+      .attr('y', optH / 4 - 2)
+      .attr('font-size', optH / 2 + 5)
+      .attr('font-weight', 'bold')
+      .attr('fill', '#fff')
+      .text('?');
     
     if (optional) {
       optionalGroup.style('display', 'inline');
@@ -490,39 +492,42 @@ export class VariantDrawerDirective
 
     optionalGroup.on('click', (e: MouseEvent) => {
       e.stopPropagation();
-      this.operatorAction.emit({ action: 'optional', elements: element.elements });
     });
 
     // Repeatable icon (circular arrow)
     const repeatGroup = iconsGroup
       .append('g')
-      .attr('transform', `translate(${startX + iconSpacing}, ${iconY})`)
-      .style('cursor', 'pointer');
+      .attr('transform', `translate(${startX + iconSpacing}, ${iconY})`);
+
+    // background rect (rounded)
     repeatGroup
       .append('circle')
-      .attr('r', 8)
-      .attr('fill', '#fff')
-      .attr('stroke', '#888')
-      .attr('stroke-width', 1);
+      .attr('r', optH / 2)
+      .attr('fill', '#007213ff')
+      .attr('stroke', '#ffffff')
+      .style('bi bi-arrow-clockwise');
+
+    // small question mark icon (left inside rect)
     repeatGroup
       .append('text')
-      .attr('x', 0)
-      .attr('y', 4)
-      .attr('text-anchor', 'middle')
-      .attr('font-size', 10)
-      .text('⟲')
-      .attr('fill', '#444')
-      .style('pointer-events', 'none');
+      .attr('x', - optH / 4)
+      .attr('y', optH / 4 - 2)
+      .attr('font-size', optH / 2 + 3)
+      .attr('font-weight', 'bold')
+      .attr('fill', '#fff')
+      .text('⟳');
     
+    
+      repeatGroup.on('mouseover', (e: MouseEvent) => {
+        e.stopPropagation();
+        console.log('Repeatable clicked');
+      })
+
       if (repeatable) {
       repeatGroup.style('display', 'inline');
     } else {
       repeatGroup.style('display', 'none');
     }
-    repeatGroup.on('click', (e: MouseEvent) => {
-      e.stopPropagation();
-      this.operatorAction.emit({ action: 'repeatable', elements: element.elements });
-    });
 
     if (this.onMouseOverCbFc) {
       this.onMouseOverCbFc(this, element, this.variant, parent);

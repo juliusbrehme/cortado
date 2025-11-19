@@ -34,6 +34,10 @@ import {
   VariantElement,
   ChoiceGroup,
   OperatorGroup,
+  FallthroughGroup,
+  SkipGroup,
+  StartGroup,
+  EndGroup,
 } from 'src/app/objects/Variants/variant_element';
 import { collapsingText, fadeInText } from 'src/app/animations/text-animations';
 import { findPathToSelectedNode } from 'src/app/objects/Variants/utility_functions';
@@ -42,20 +46,27 @@ import { Observable, of, Subject } from 'rxjs';
 import { first, takeUntil, tap } from 'rxjs/operators';
 
 @Component({
-  selector: 'app-variant-modeler',
-  templateUrl: './variant-modeler.component.html',
-  styleUrls: ['./variant-modeler.component.css'],
+  selector: 'app-variant-query-modeler',
+  templateUrl: './variant-query-modeler.component.html',
+  styleUrls: ['./variant-query-modeler.component.css'],
   animations: [fadeInText, collapsingText],
 })
-export class VariantModelerComponent
+export class VariantQueryModelerComponent
   extends LayoutChangeDirective
   implements OnInit, OnDestroy
 {
+  // Floating operator editor state
+  editorVisible: boolean = false;
+  editorX: number = 0;
+  editorY: number = 0;
+  editorValue: number | string = '';
+  private editorTarget: any = null; // OperatorGroup
+
   activityNames: Array<String> = [];
 
   public colorMap: Map<string, string>;
 
-  VariantModelerComponent = VariantModelerComponent;
+  VariantQueryModelerComponent = VariantQueryModelerComponent;
 
   @ViewChild('VariantMainGroup')
   variantElement: ElementRef;
@@ -223,6 +234,43 @@ export class VariantModelerComponent
     }
 
     this.variantEnrichedSelection = selection;
+  }
+
+  onOperatorAction(event: any) {
+    if (!event || !event.action) return;
+    if (event.action === 'editLoopSize') {
+      const opGroup = event.element || (event.elements && event.elements[0]);
+      if (!opGroup) return;
+      this.editorTarget = opGroup;
+      this.editorValue = (opGroup.operatorFlags && opGroup.operatorFlags.loopSize) || '';
+
+      const winX = event.clientX || window.innerWidth / 2;
+      const winY = event.clientY || window.innerHeight / 2;
+      this.editorX = Math.max(8, winX + 8);
+      this.editorY = Math.max(8, winY + 8);
+      this.editorVisible = true;
+      setTimeout(() => {
+        const el = document.querySelector('.floating-editor input') as HTMLInputElement;
+        if (el) el.focus();
+      });
+    }
+  }
+
+  applyEditor() {
+    if (!this.editorTarget) return;
+    const n = Number(this.editorValue);
+    if (!isNaN(n) && n >= 0) {
+      if (!this.editorTarget.operatorFlags) this.editorTarget.operatorFlags = {};
+      this.editorTarget.operatorFlags.loopSize = n;
+      if (this.variantDrawer) this.variantDrawer.redraw();
+    }
+    this.editorVisible = false;
+    this.editorTarget = null;
+  }
+
+  cancelEditor() {
+    this.editorVisible = false;
+    this.editorTarget = null;
   }
 
   handleActivityButtonClick(event) {
@@ -545,43 +593,108 @@ export class VariantModelerComponent
     }
   }
 
-  onRepeatableSelected() {
+  onOperatorSelected(operatorType: string) {
     const selectedElements = this.variantEnrichedSelection
       .selectAll('.selected-variant-g')
       .data();
+
     // If nothing selected, nothing to do
     if (!selectedElements || selectedElements.length === 0) return;
 
-    const leaf = selectedElements[0] as LeafNode;
-    const parent = this.findParent(this.currentVariant, leaf);
+    // We want only one parent so we select just one and check if the selection is valid
+    const parent = this.findParent(this.currentVariant, selectedElements[0]);
     if (!parent) return;
 
-    const children = parent.getElements();
-    const idx = children.indexOf(leaf);
-    if (idx === -1) return;
+    const children = parent.getElements();    
+
+    // If our selection is within an OperatorGroup, we do not allow nesting
+    if (parent instanceof OperatorGroup && selectedElements.length === 1) {
+      // We toggle the operator on the existing OperatorGroup
+      this.toggleOperatorGroup(parent, operatorType);
+      return;
+    }
+
+    if (selectedElements.length === 1 && selectedElements[0] instanceof OperatorGroup){
+      // We toggle the operator on the existing OperatorGroup
+      this.toggleOperatorGroup(selectedElements[0] as OperatorGroup, operatorType);
+      return;
+    }
+
+    // The index where to insert the OperatorGroup
+    let first_idx = -1;
+    // Check if all selected elements have the same parent and are continuous
+    let current_idx = -1;
+    for (const leaf of selectedElements) {
+      const leaf_parent = this.findParent(this.currentVariant, leaf);
+      if (parent !== leaf_parent) return;
+      const idx = children.indexOf(leaf);
+      if (current_idx == -1) {
+        current_idx = idx;
+        first_idx = idx;
+      }
+      else if (idx !== current_idx + 1) {
+        // Not continuous selection
+        return;
+      }
+      if (idx === -1) return;
+    }
+
+    // Remove selected elements from parent's children
+    children.splice(first_idx, selectedElements.length);
+
+    const operator = new OperatorGroup(selectedElements as VariantElement[]);
+    if (operatorType === 'repeatable'){
+      operator.toggleRepeatable();
+    } else if (operatorType === 'optional'){
+      operator.toggleOptional();
+    }
     
-    const choice = new OperatorGroup([children]);
-    children.splice(idx, 1, choice);
+    children.splice(first_idx, 0, operator);
     parent.setElements(children);
+    
     this.cacheCurrentVariant();
     this.triggerRedraw();
   }
 
-  onOptionalSelected() {
-    const selectedElements = this.variantEnrichedSelection
-      .selectAll('.selected-variant-g')
-      .data();
-    // If nothing selected, nothing to do
-    if (!selectedElements || selectedElements.length === 0) return;
+  toggleOperatorGroup(group: OperatorGroup, operatorType: string) {
+    if (operatorType === 'repeatable'){
+        group.toggleRepeatable();
+      } else if (operatorType === 'optional'){
+        group.toggleOptional();
+      }
+      // If we toggled off both operators, we remove the OperatorGroup
+      if (group.getRepeatable() === false && group.getOptional() === false){
+        // If both operators are off, we remove the OperatorGroup
+        const grandParent = this.findParent(this.currentVariant, group);
+        const grandChildren = grandParent.getElements();
+        const parentIdx = grandChildren.indexOf(group);
+        // Remove the OperatorGroup and insert its children in its place
+        grandChildren.splice(parentIdx, 1, ...group.getElements());
+        grandParent.setElements(grandChildren);
+      }
+      this.cacheCurrentVariant();
+      this.triggerRedraw();
   }
 
+  onRepeatableSelected() {
+    this.onOperatorSelected('repeatable');
+  }
+
+  onOptionalSelected() {
+    this.onOperatorSelected('optional');
+  }
+
+  /** Handler for ChoiceGroup creation 
+   *  Constraints:
+   *  - Only a single LeafNode can be selected
+  */
   onChoiceSelected() {
     const selectedElements = this.variantEnrichedSelection
       .selectAll('.selected-variant-g')
       .data();
     // If nothing selected, nothing to do
     if (!selectedElements || selectedElements.length === 0) return;
-    // If selection is a single LeafNode, replace it by a ChoiceGroup containing that element and an empty LeafNode
+    // If selection is a single LeafNode, replace it by a ChoiceGroup containing that element
     if (selectedElements.length === 1 && selectedElements[0] instanceof LeafNode) {
       const leaf = selectedElements[0] as LeafNode;
       const parent = this.findParent(this.currentVariant, leaf);
@@ -592,14 +705,29 @@ export class VariantModelerComponent
       if (idx === -1) return;
 
       // Replace the leaf with a ChoiceGroup containing the leaf and an empty LeafNode
-      const emptyLeaf = new LeafNode(['']);
-      const choice = new ChoiceGroup([leaf, emptyLeaf]);
+      const choice = new ChoiceGroup([leaf]);
       children.splice(idx, 1, choice);
       parent.setElements(children);
       this.cacheCurrentVariant();
       this.triggerRedraw();
       return;
     }
+  }
+
+  onAddWildcardSelected() {
+    this.handleActivityButtonClick({ activityName: 'WILDCARD' });
+  }
+
+  onAddAnythingOperatorSelected() {
+    this.handleActivityButtonClick({ activityName: '...' });
+  }
+
+  onAddStartOperatorSelected() {
+    this.handleActivityButtonClick({ activityName: '▶️' });
+  }
+
+  onAddEndOperatorSelected() {
+    this.handleActivityButtonClick({ activityName: '🟥' });
   }
 
   // Handler for actions emitted by the variant-modeler context menu
@@ -621,6 +749,23 @@ export class VariantModelerComponent
     if (event.action === 'choice') {
       this.onChoiceSelected();
     }
+
+    if (event.action === 'wildcard') {
+      this.onAddWildcardSelected();
+    }
+
+    if (event.action === 'anything') {
+      this.onAddAnythingOperatorSelected();
+    }
+
+    if (event.action === 'start') {
+      this.onAddStartOperatorSelected();
+    }
+
+    if (event.action === 'end') {
+      this.onAddEndOperatorSelected();
+    }
+
   }
 
   computeActivityColor = (
@@ -1011,7 +1156,7 @@ export class VariantModelerComponent
     return of();
   }
 
-  applySortOnVariantModeler() {
+  applySortOnVariantQueryModeler() {
     const variantExplorerRef =
       this.goldenLayoutComponentService.goldenLayout.findFirstComponentItemById(
         VariantExplorerComponent.componentName
@@ -1029,8 +1174,8 @@ export class VariantModelerComponent
   }
 }
 
-export namespace VariantModelerComponent {
-  export const componentName = 'VariantModelerComponent';
+export namespace VariantQueryModelerComponent {
+  export const componentName = 'VariantQueryModelerComponent';
 }
 
 export enum activityInsertionStrategy {
