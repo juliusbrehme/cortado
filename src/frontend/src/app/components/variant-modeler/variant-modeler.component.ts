@@ -559,7 +559,7 @@ export class VariantModelerComponent
     const children = parent.getElements();
     const idx = children.indexOf(leaf);
     if (idx === -1) return;
-    
+
     const choice = new OperatorGroup([children]);
     children.splice(idx, 1, choice);
     parent.setElements(children);
@@ -582,7 +582,10 @@ export class VariantModelerComponent
     // If nothing selected, nothing to do
     if (!selectedElements || selectedElements.length === 0) return;
     // If selection is a single LeafNode, replace it by a ChoiceGroup containing that element and an empty LeafNode
-    if (selectedElements.length === 1 && selectedElements[0] instanceof LeafNode) {
+    if (
+      selectedElements.length === 1 &&
+      selectedElements[0] instanceof LeafNode
+    ) {
       const leaf = selectedElements[0] as LeafNode;
       const parent = this.findParent(this.currentVariant, leaf);
       if (!parent) return;

@@ -90,7 +90,7 @@ export class VariantQueryModelerContextMenuComponent {
 
   makeChoiceDisabled = (element: VariantElement) => {
     return !element;
-  }
+  };
 
   makeOptionalDisabled(element: VariantElement) {
     return !element;

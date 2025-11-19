@@ -272,7 +272,7 @@ export class HeaderBarComponent implements OnDestroy {
     );
   }
 
-   openVariantQueryModeler() {
+  openVariantQueryModeler() {
     const componentID = VariantQueryModelerComponent.componentName;
 
     const LocationSelectors: LayoutManager.LocationSelector[] = [

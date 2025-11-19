@@ -242,7 +242,8 @@ export class VariantQueryModelerComponent
       const opGroup = event.element || (event.elements && event.elements[0]);
       if (!opGroup) return;
       this.editorTarget = opGroup;
-      this.editorValue = (opGroup.operatorFlags && opGroup.operatorFlags.loopSize) || '';
+      this.editorValue =
+        (opGroup.operatorFlags && opGroup.operatorFlags.loopSize) || '';
 
       const winX = event.clientX || window.innerWidth / 2;
       const winY = event.clientY || window.innerHeight / 2;
@@ -250,7 +251,9 @@ export class VariantQueryModelerComponent
       this.editorY = Math.max(8, winY + 8);
       this.editorVisible = true;
       setTimeout(() => {
-        const el = document.querySelector('.floating-editor input') as HTMLInputElement;
+        const el = document.querySelector(
+          '.floating-editor input'
+        ) as HTMLInputElement;
         if (el) el.focus();
       });
     }
@@ -260,7 +263,8 @@ export class VariantQueryModelerComponent
     if (!this.editorTarget) return;
     const n = Number(this.editorValue);
     if (!isNaN(n) && n >= 0) {
-      if (!this.editorTarget.operatorFlags) this.editorTarget.operatorFlags = {};
+      if (!this.editorTarget.operatorFlags)
+        this.editorTarget.operatorFlags = {};
       this.editorTarget.operatorFlags.loopSize = n;
       if (this.variantDrawer) this.variantDrawer.redraw();
     }
@@ -605,7 +609,7 @@ export class VariantQueryModelerComponent
     const parent = this.findParent(this.currentVariant, selectedElements[0]);
     if (!parent) return;
 
-    const children = parent.getElements();    
+    const children = parent.getElements();
 
     // If our selection is within an OperatorGroup, we do not allow nesting
     if (parent instanceof OperatorGroup && selectedElements.length === 1) {
@@ -614,9 +618,15 @@ export class VariantQueryModelerComponent
       return;
     }
 
-    if (selectedElements.length === 1 && selectedElements[0] instanceof OperatorGroup){
+    if (
+      selectedElements.length === 1 &&
+      selectedElements[0] instanceof OperatorGroup
+    ) {
       // We toggle the operator on the existing OperatorGroup
-      this.toggleOperatorGroup(selectedElements[0] as OperatorGroup, operatorType);
+      this.toggleOperatorGroup(
+        selectedElements[0] as OperatorGroup,
+        operatorType
+      );
       return;
     }
 
@@ -631,8 +641,7 @@ export class VariantQueryModelerComponent
       if (current_idx == -1) {
         current_idx = idx;
         first_idx = idx;
-      }
-      else if (idx !== current_idx + 1) {
+      } else if (idx !== current_idx + 1) {
         // Not continuous selection
         return;
       }
@@ -643,37 +652,37 @@ export class VariantQueryModelerComponent
     children.splice(first_idx, selectedElements.length);
 
     const operator = new OperatorGroup(selectedElements as VariantElement[]);
-    if (operatorType === 'repeatable'){
+    if (operatorType === 'repeatable') {
       operator.toggleRepeatable();
-    } else if (operatorType === 'optional'){
+    } else if (operatorType === 'optional') {
       operator.toggleOptional();
     }
-    
+
     children.splice(first_idx, 0, operator);
     parent.setElements(children);
-    
+
     this.cacheCurrentVariant();
     this.triggerRedraw();
   }
 
   toggleOperatorGroup(group: OperatorGroup, operatorType: string) {
-    if (operatorType === 'repeatable'){
-        group.toggleRepeatable();
-      } else if (operatorType === 'optional'){
-        group.toggleOptional();
-      }
-      // If we toggled off both operators, we remove the OperatorGroup
-      if (group.getRepeatable() === false && group.getOptional() === false){
-        // If both operators are off, we remove the OperatorGroup
-        const grandParent = this.findParent(this.currentVariant, group);
-        const grandChildren = grandParent.getElements();
-        const parentIdx = grandChildren.indexOf(group);
-        // Remove the OperatorGroup and insert its children in its place
-        grandChildren.splice(parentIdx, 1, ...group.getElements());
-        grandParent.setElements(grandChildren);
-      }
-      this.cacheCurrentVariant();
-      this.triggerRedraw();
+    if (operatorType === 'repeatable') {
+      group.toggleRepeatable();
+    } else if (operatorType === 'optional') {
+      group.toggleOptional();
+    }
+    // If we toggled off both operators, we remove the OperatorGroup
+    if (group.getRepeatable() === false && group.getOptional() === false) {
+      // If both operators are off, we remove the OperatorGroup
+      const grandParent = this.findParent(this.currentVariant, group);
+      const grandChildren = grandParent.getElements();
+      const parentIdx = grandChildren.indexOf(group);
+      // Remove the OperatorGroup and insert its children in its place
+      grandChildren.splice(parentIdx, 1, ...group.getElements());
+      grandParent.setElements(grandChildren);
+    }
+    this.cacheCurrentVariant();
+    this.triggerRedraw();
   }
 
   onRepeatableSelected() {
@@ -684,10 +693,10 @@ export class VariantQueryModelerComponent
     this.onOperatorSelected('optional');
   }
 
-  /** Handler for ChoiceGroup creation 
+  /** Handler for ChoiceGroup creation
    *  Constraints:
    *  - Only a single LeafNode can be selected
-  */
+   */
   onChoiceSelected() {
     const selectedElements = this.variantEnrichedSelection
       .selectAll('.selected-variant-g')
@@ -695,7 +704,10 @@ export class VariantQueryModelerComponent
     // If nothing selected, nothing to do
     if (!selectedElements || selectedElements.length === 0) return;
     // If selection is a single LeafNode, replace it by a ChoiceGroup containing that element
-    if (selectedElements.length === 1 && selectedElements[0] instanceof LeafNode) {
+    if (
+      selectedElements.length === 1 &&
+      selectedElements[0] instanceof LeafNode
+    ) {
       const leaf = selectedElements[0] as LeafNode;
       const parent = this.findParent(this.currentVariant, leaf);
       if (!parent) return;
@@ -765,7 +777,6 @@ export class VariantQueryModelerComponent
     if (event.action === 'end') {
       this.onAddEndOperatorSelected();
     }
-
   }
 
   computeActivityColor = (

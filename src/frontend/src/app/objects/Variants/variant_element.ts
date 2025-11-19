@@ -62,7 +62,8 @@ export abstract class VariantElement {
       (this instanceof ParallelGroup &&
         variantElement instanceof ParallelGroup) ||
       (this instanceof LoopGroup && variantElement instanceof LoopGroup) ||
-      (this instanceof OperatorGroup && variantElement instanceof OperatorGroup) ||
+      (this instanceof OperatorGroup &&
+        variantElement instanceof OperatorGroup) ||
       (this instanceof SkipGroup && variantElement instanceof SkipGroup) ||
       (this instanceof LeafNode && variantElement instanceof LeafNode) ||
       (this instanceof WaitingTimeNode &&
@@ -486,7 +487,6 @@ export class SequenceGroup extends VariantElement {
 }
 
 export class OperatorGroup extends VariantElement {
-
   public isRepeatable: boolean = false;
   public isOptional: boolean = false;
 
