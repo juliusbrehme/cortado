@@ -489,6 +489,15 @@ export class SequenceGroup extends VariantElement {
 export class OperatorGroup extends VariantElement {
   public isRepeatable: boolean = false;
   public isOptional: boolean = false;
+  public repeatCount: number = 1;
+
+  public setRepeatCount(count: number) {
+    this.repeatCount = count;
+  }
+
+  public getRepeatCount(): number {
+    return this.repeatCount;
+  }
 
   public toggleRepeatable() {
     this.isRepeatable = !this.isRepeatable;
@@ -1014,6 +1023,17 @@ export class FallthroughGroup extends VariantElement {
 }
 
 export class ChoiceGroup extends VariantElement {
+
+  public isCollapsed: boolean = false;
+
+  public getCollapsed(): boolean {
+    return this.isCollapsed;
+  }
+
+  public toggleCollapsed() {
+    this.isCollapsed = !this.isCollapsed;
+  }
+
   public getActivities(): Set<string> {
     const res: Set<string> = new Set<string>();
 
@@ -1119,6 +1139,10 @@ export class ChoiceGroup extends VariantElement {
   }
 
   public updateWidth(includeWaiting) {
+    let numberOfElements = this.elements.length;
+    if (this.isCollapsed) {
+      numberOfElements = 1;
+    }
     let headLength = this.getHeadLength();
     for (let el of this.elements) {
       el.width =
@@ -1127,7 +1151,7 @@ export class ChoiceGroup extends VariantElement {
         2 * headLength -
         (2 *
           ((VARIANT_Constants.LEAF_HEIGHT + VARIANT_Constants.MARGIN_Y) *
-            this.elements.length +
+            numberOfElements +
             VARIANT_Constants.MARGIN_Y)) /
           2.8;
     }
@@ -1138,6 +1162,10 @@ export class ChoiceGroup extends VariantElement {
   }
 
   public recalculateHeight(): number {
+    if (this.isCollapsed) {
+      this.height = this.elements[0].getHeight() + 2 * this.getMarginY();
+      return this.height;
+    }
     this.elements.forEach((el) => (el.height = undefined));
     this.height =
       this.elements
@@ -1147,6 +1175,11 @@ export class ChoiceGroup extends VariantElement {
   }
 
   public recalculateWidth(includeWaiting = false): number {
+    let numberOfElements = this.elements.length;
+    if (this.isCollapsed) {
+      // For the collapsed view, we have to readjust
+      numberOfElements = 1;
+    } 
     this.elements.forEach((el) => (el.width = undefined));
     let headLength = this.getHeadLength();
     this.width =
@@ -1159,7 +1192,7 @@ export class ChoiceGroup extends VariantElement {
       2 * headLength +
       (2 *
         ((VARIANT_Constants.LEAF_HEIGHT + VARIANT_Constants.MARGIN_Y) *
-          this.elements.length +
+          numberOfElements +
           VARIANT_Constants.MARGIN_Y)) /
         2.8;
     return this.width;

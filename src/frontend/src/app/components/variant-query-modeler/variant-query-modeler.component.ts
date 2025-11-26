@@ -779,6 +779,13 @@ export class VariantQueryModelerComponent
     }
   }
 
+  handleClick = (
+    self: VariantDrawerDirective,
+    element: VariantElement
+  ) => {
+    console.log('handleClick invoked for element:', element);
+  };
+
   computeActivityColor = (
     self: VariantDrawerDirective,
     element: VariantElement
