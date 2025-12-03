@@ -401,6 +401,14 @@ export class BackendService {
     );
   }
 
+  visualQuery(query: VariantElement): Observable<any> {
+    const queryBody = { queryVariant: query.serialize() };
+    return this.httpClient.post(
+      ROUTES.HTTP_BASE_URL + ROUTES.QUERY + 'visual-query',
+      queryBody
+    );
+  }
+
   getInfo(): Observable<any> {
     return this.httpClient.get(ROUTES.HTTP_BASE_URL + 'info');
   }

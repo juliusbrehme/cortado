@@ -35,9 +35,10 @@ import {
   ChoiceGroup,
   OperatorGroup,
   FallthroughGroup,
-  SkipGroup,
-  StartGroup,
-  EndGroup,
+  StartNode,
+  EndNode,
+  WildcardNode,
+  AnythingNode
 } from 'src/app/objects/Variants/variant_element';
 import { collapsingText, fadeInText } from 'src/app/animations/text-animations';
 import { findPathToSelectedNode } from 'src/app/objects/Variants/utility_functions';
@@ -63,6 +64,8 @@ export class VariantQueryModelerComponent
   private editorTarget: any = null; // OperatorGroup
 
   activityNames: Array<String> = [];
+
+  customActivities: boolean = true;
 
   public colorMap: Map<string, string>;
 
@@ -132,8 +135,6 @@ export class VariantQueryModelerComponent
         }
       });
 
-    // Test adding a wildcard default activity
-    this.activityNames.push('WILDCARD');
 
     this.logService.loadedEventLog$
       .pipe(takeUntil(this._destroy$))
@@ -379,7 +380,7 @@ export class VariantQueryModelerComponent
 
   handleMultiParallelInsert(
     variant: VariantElement,
-    leaf: LeafNode,
+    leaf: VariantElement,
     selectedElement
   ) {
     const parent = this.findParent(variant, selectedElement[0]);
@@ -407,7 +408,7 @@ export class VariantQueryModelerComponent
 
   handleParallelInsert(
     variant: VariantElement,
-    leaf: LeafNode,
+    leaf: VariantElement,
     selectedElement
   ) {
     const children = variant.getElements();
@@ -448,7 +449,7 @@ export class VariantQueryModelerComponent
     this.curInfixType = infixtype;
   }
 
-  handleBehindInsert(variant: VariantElement, leaf: LeafNode, selectedElement) {
+  handleBehindInsert(variant: VariantElement, leaf: VariantElement, selectedElement) {
     const children = variant.getElements();
 
     if (children) {
@@ -497,7 +498,7 @@ export class VariantQueryModelerComponent
 
   handleInfrontInsert(
     variant: VariantElement,
-    leaf: LeafNode,
+    leaf: VariantElement,
     selectedElement
   ) {
     const children = variant.getElements();
@@ -541,7 +542,7 @@ export class VariantQueryModelerComponent
     }
   }
 
-  handleReplace(variant: VariantElement, leaf: LeafNode, selectedElement) {
+  handleReplace(variant: VariantElement, leaf: VariantElement, selectedElement) {
     const children = variant.getElements();
 
     if (children) {
@@ -727,19 +728,23 @@ export class VariantQueryModelerComponent
   }
 
   onAddWildcardSelected() {
-    this.handleActivityButtonClick({ activityName: 'WILDCARD' });
+    const leaf = new WildcardNode();
+    this.insertCustomNode(leaf);
   }
 
   onAddAnythingOperatorSelected() {
-    this.handleActivityButtonClick({ activityName: '...' });
+    const leaf = new AnythingNode();
+    this.insertCustomNode(leaf);
   }
 
   onAddStartOperatorSelected() {
-    this.handleActivityButtonClick({ activityName: '▶️' });
+    const leaf = new StartNode();
+    this.insertCustomNode(leaf);
   }
 
   onAddEndOperatorSelected() {
-    this.handleActivityButtonClick({ activityName: '🟥' });
+    const leaf = new EndNode();
+    this.insertCustomNode(leaf);
   }
 
   // Handler for actions emitted by the variant-modeler context menu
@@ -779,12 +784,91 @@ export class VariantQueryModelerComponent
     }
   }
 
-  handleClick = (
-    self: VariantDrawerDirective,
-    element: VariantElement
-  ) => {
-    console.log('handleClick invoked for element:', element);
-  };
+  insertCustomNode(node: VariantElement) {
+    if (this.selectedElement || this.emptyVariant) {
+      const leaf = node;
+      this.newLeaf = leaf;
+
+      // hide tooltip
+      if (this.variantService.activityTooltipReference) {
+        this.variantService.activityTooltipReference.tooltip('hide');
+      }
+
+      if (this.emptyVariant) {
+        const variantGroup = new SequenceGroup([leaf]);
+        variantGroup.setExpanded(true);
+        this.currentVariant = variantGroup;
+        this.emptyVariant = false;
+        this.selectedElement = true;
+      } else {
+        leaf.setExpanded(true);
+        const selectedElement = this.variantEnrichedSelection
+          .selectAll('.selected-variant-g')
+          .data()[0];
+
+        switch (this.selectedStrategy) {
+          case this.insertionStrategy.infront:
+            if (!this.multipleSelected) {
+              this.handleInfrontInsert(
+                this.currentVariant,
+                leaf,
+                selectedElement
+              );
+              const grandParent = this.findParent(
+                this.currentVariant,
+                this.findParent(this.currentVariant, leaf)
+              );
+              if (grandParent instanceof ParallelGroup) {
+                this.sortParallel(grandParent);
+              }
+            }
+            break;
+          case this.insertionStrategy.behind:
+            if (!this.multipleSelected) {
+              this.handleBehindInsert(
+                this.currentVariant,
+                leaf,
+                selectedElement
+              );
+              const grandParent = this.findParent(
+                this.currentVariant,
+                this.findParent(this.currentVariant, leaf)
+              );
+              if (grandParent instanceof ParallelGroup) {
+                this.sortParallel(grandParent);
+              }
+            }
+            break;
+          case this.insertionStrategy.parallel:
+            if (!this.multipleSelected) {
+              this.handleParallelInsert(
+                this.currentVariant,
+                leaf,
+                selectedElement
+              );
+            } else {
+              const selectedElements = this.variantEnrichedSelection
+                .selectAll('.selected-variant-g')
+                .data();
+              this.handleMultiParallelInsert(
+                this.currentVariant,
+                leaf,
+                selectedElements
+              );
+            }
+            this.sortParallel(this.findParent(this.currentVariant, leaf));
+            break;
+          case this.insertionStrategy.replace:
+            if (!this.multipleSelected) {
+              this.handleReplace(this.currentVariant, leaf, selectedElement);
+            }
+            break;
+        }
+        this.triggerRedraw();
+      }
+      this.cacheCurrentVariant();
+    }
+  }
 
   computeActivityColor = (
     self: VariantDrawerDirective,
@@ -921,15 +1005,6 @@ export class VariantQueryModelerComponent
     }
   }
 
-  /*
-  sortParallel(variant) {
-    let children = variant.getElements();
-    console.log(children);
-    //children.sort((node1, node2) => this.compareNode(node1, node2));
-    children = children.sort((a, b) => true);
-    console.log(children);
-    variant.setElements(children);
-  }*/
   sortParallel(variant) {
     const children = variant.getElements();
     for (let i = 1; i < children.length; i++) {
@@ -1099,67 +1174,22 @@ export class VariantQueryModelerComponent
     return [-translateX, 0];
   };
 
-  addCurrentVariantToVariantList() {
-    const copyCurrent = cloneDeep(this.currentVariant);
-
-    setParent(copyCurrent);
-    copyCurrent.setExpanded(false);
-
-    const newVariant = new Variant(
-      0,
-      copyCurrent,
-      false,
-      true,
-      false,
-      0,
-      undefined,
-      true,
-      false,
-      true,
-      0,
-      this.curInfixType
-    );
-
-    newVariant.alignment = undefined;
-    newVariant.deviations = undefined;
-    newVariant.id = objectHash(newVariant);
-
-    this.variantService.nUserVariants += 1;
-    newVariant.bid = -this.variantService.nUserVariants;
-
-    const duplicate = this.variantService.variants.some((v: Variant) => {
-      return newVariant.equals(v) || v.id === newVariant.id;
-    });
-
-    if (!duplicate) {
-      this.variantService.variants.push(newVariant);
-      this.addStatistics(newVariant).subscribe();
-
-      if (newVariant.infixType === InfixType.NOT_AN_INFIX) {
-        this.variantService.addUserDefinedVariant(newVariant).subscribe(() => {
-          if (this.variantService.clusteringConfig) {
-            // trigger new clustering
-            this.variantService.clusteringConfig =
-              this.variantService.clusteringConfig;
-          } else {
-            this.variantService.variants = this.variantService.variants;
-          }
-        });
-      } else {
-        this.variantService.addInfixToBackend(newVariant).subscribe(() => {
-          if (this.variantService.clusteringConfig) {
-            // trigger new clustering
-            this.variantService.clusteringConfig =
-              this.variantService.clusteringConfig;
-          } else {
-            this.variantService.variants = this.variantService.variants;
-          }
+  onFilterVariants() {
+    const current = this.currentVariant;
+    console.log(current.serialize());
+    this.variantService.variants = [];
+    return
+    const observable = this.backendService.visualQuery(current)
+    observable.subscribe((res) => {
+      const variants = res['variants'];
+      for (const v of variants) {
+        const variant = v.deserialize();
+        this.addStatistics(variant).subscribe(() => {
+          this.variantService.variants.push(variant);
         });
       }
-    } else {
-      this.redundancyWarning = true;
-      setTimeout(() => (this.redundancyWarning = false), 500);
-    }
+      this.applySortOnVariantQueryModeler();
+    });
   }
 
   private addStatistics(newVariant: Variant): Observable<any> {
@@ -1185,11 +1215,11 @@ export class VariantQueryModelerComponent
     variantExplorer.onSortOrderChanged(false);
   }
 
-  sortVariant(variant) {
-    this.backendService.sortInVariantModeler(variant).subscribe((res) => {
-      this.currentVariant = deserialize(res['variants']);
-    });
-  }
+  // sortVariant(variant) {
+  //   this.backendService.sortInVariantModeler(variant).subscribe((res) => {
+  //     this.currentVariant = deserialize(res['variants']);
+  //   });
+  // }
 }
 
 export namespace VariantQueryModelerComponent {

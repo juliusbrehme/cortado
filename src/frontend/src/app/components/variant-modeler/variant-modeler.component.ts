@@ -31,9 +31,7 @@ import {
   LeafNode,
   ParallelGroup,
   SequenceGroup,
-  VariantElement,
-  ChoiceGroup,
-  OperatorGroup,
+  VariantElement
 } from 'src/app/objects/Variants/variant_element';
 import { collapsingText, fadeInText } from 'src/app/animations/text-animations';
 import { findPathToSelectedNode } from 'src/app/objects/Variants/utility_functions';
@@ -542,87 +540,6 @@ export class VariantModelerComponent
       this.cacheCurrentVariant();
 
       this.triggerRedraw();
-    }
-  }
-
-  onRepeatableSelected() {
-    const selectedElements = this.variantEnrichedSelection
-      .selectAll('.selected-variant-g')
-      .data();
-    // If nothing selected, nothing to do
-    if (!selectedElements || selectedElements.length === 0) return;
-
-    const leaf = selectedElements[0] as LeafNode;
-    const parent = this.findParent(this.currentVariant, leaf);
-    if (!parent) return;
-
-    const children = parent.getElements();
-    const idx = children.indexOf(leaf);
-    if (idx === -1) return;
-
-    const choice = new OperatorGroup([children]);
-    children.splice(idx, 1, choice);
-    parent.setElements(children);
-    this.cacheCurrentVariant();
-    this.triggerRedraw();
-  }
-
-  onOptionalSelected() {
-    const selectedElements = this.variantEnrichedSelection
-      .selectAll('.selected-variant-g')
-      .data();
-    // If nothing selected, nothing to do
-    if (!selectedElements || selectedElements.length === 0) return;
-  }
-
-  onChoiceSelected() {
-    const selectedElements = this.variantEnrichedSelection
-      .selectAll('.selected-variant-g')
-      .data();
-    // If nothing selected, nothing to do
-    if (!selectedElements || selectedElements.length === 0) return;
-    // If selection is a single LeafNode, replace it by a ChoiceGroup containing that element and an empty LeafNode
-    if (
-      selectedElements.length === 1 &&
-      selectedElements[0] instanceof LeafNode
-    ) {
-      const leaf = selectedElements[0] as LeafNode;
-      const parent = this.findParent(this.currentVariant, leaf);
-      if (!parent) return;
-
-      const children = parent.getElements();
-      const idx = children.indexOf(leaf);
-      if (idx === -1) return;
-
-      // Replace the leaf with a ChoiceGroup containing the leaf and an empty LeafNode
-      const emptyLeaf = new LeafNode(['']);
-      const choice = new ChoiceGroup([leaf, emptyLeaf]);
-      children.splice(idx, 1, choice);
-      parent.setElements(children);
-      this.cacheCurrentVariant();
-      this.triggerRedraw();
-      return;
-    }
-  }
-
-  // Handler for actions emitted by the variant-modeler context menu
-  onContextMenuAction(event: { action: string; value: any }) {
-    if (!event || !event.action) return;
-
-    if (event.action === 'delete') {
-      this.onDeleteSelected();
-    }
-
-    if (event.action === 'repeatable') {
-      this.onRepeatableSelected();
-    }
-
-    if (event.action === 'optional') {
-      this.onOptionalSelected();
-    }
-
-    if (event.action === 'choice') {
-      this.onChoiceSelected();
     }
   }
 

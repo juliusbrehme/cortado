@@ -18,6 +18,7 @@ import { Variant } from 'src/app/objects/Variants/variant';
 import {
   LeafNode,
   VariantElement,
+  WildcardNode,
 } from 'src/app/objects/Variants/variant_element';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
@@ -38,6 +39,9 @@ export class ActivityButtonAreaComponent
   activityNames: Array<string> = [];
 
   @Input()
+  customActivities: boolean = false;
+
+  @Input()
   referenceVariant: VariantElement = null;
 
   @Input()
@@ -46,7 +50,7 @@ export class ActivityButtonAreaComponent
   @Input()
   redrawSingal: boolean = false;
 
-  activityDummyVariants: Map<string, LeafNode> = new Map<string, LeafNode>();
+  activityDummyVariants: Map<string, VariantElement> = new Map<string, VariantElement>();
 
   @Output()
   activityButtonClick = new EventEmitter();
@@ -59,12 +63,19 @@ export class ActivityButtonAreaComponent
   private _destroy$ = new Subject();
 
   ngOnInit() {
-    this.activityDummyVariants = new Map<string, LeafNode>();
+    this.activityDummyVariants = new Map<string, VariantElement>();
 
     for (let activity of this.activityNames) {
       const leaf = new LeafNode([activity]);
       leaf.setExpanded(true);
       this.activityDummyVariants.set(activity, leaf);
+    }
+
+    if (this.customActivities) {
+      console.log('Adding wildcard activity button');
+      const leaf = new WildcardNode();
+      leaf.setExpanded(true);
+      this.activityDummyVariants.set('?Wildcard?', leaf);
     }
 
     this.colorMapService.colorMap$
@@ -82,13 +93,20 @@ export class ActivityButtonAreaComponent
   ngOnChanges(changes: SimpleChanges): void {
     // A somewhat crude way to trigger a redraw after the value did change and preventing it from firing on the initalization
     // Review when the colormap might change after init
-    this.activityDummyVariants = new Map<string, LeafNode>();
+    this.activityDummyVariants = new Map<string, VariantElement>();
 
     for (let activity of changes.activityNames.currentValue) {
       const leaf = new LeafNode([activity]);
       leaf.setExpanded(true);
       this.activityDummyVariants.set(activity, leaf);
     }
+
+    if (this.customActivities) {
+      const leaf = new WildcardNode();
+      leaf.setExpanded(true);
+      this.activityDummyVariants.set('?Wildcard?', leaf);
+    }
+
     if (this.activityButtons) {
       for (let button of this.activityButtons) {
         button.redraw();
@@ -164,7 +182,11 @@ export class ActivityButtonAreaComponent
     const children = variant.getElements();
     if (variant instanceof LeafNode) {
       return leaf.asLeafNode().activity[0] === variant.asLeafNode().activity[0];
-    } else {
+    }
+    else if (variant instanceof WildcardNode) {
+      return true;
+    }
+    else {
       if (children) {
         for (const child of children) {
           if (this.activityExist(leaf, child)) {

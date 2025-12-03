@@ -22,7 +22,9 @@ import {
   SelectableState,
 } from 'src/app/objects/Variants/infix_selection';
 import {
+  AnythingNode,
   ChoiceGroup,
+  EndNode,
   FallthroughGroup,
   InvisibleSequenceGroup,
   LeafNode,
@@ -31,8 +33,10 @@ import {
   ParallelGroup,
   SequenceGroup,
   SkipGroup,
+  StartNode,
   VariantElement,
   WaitingTimeNode,
+  WildcardNode,
 } from 'src/app/objects/Variants/variant_element';
 import { textColorForBackgroundColor } from 'src/app/utils/render-utils';
 import { ViewMode } from 'src/app/objects/ViewMode';
@@ -339,7 +343,15 @@ export class VariantDrawerDirective
       this.drawSkipGroup(element.asSkipGroup(), svgElement);
     } else if (element instanceof OperatorGroup) {
       this.drawOperatorGroup(element.asOperatorGroup(), svgElement);
-    }
+    } else if (element instanceof StartNode) {
+      this.drawStartNode(element.asStartNode(), svgElement);
+    } else if (element instanceof EndNode) {
+      this.drawEndNode(element.asEndNode(), svgElement);
+    } else if (element instanceof AnythingNode) {
+      this.drawAnythingNode(element.asAnythingNode(), svgElement);
+    } else if (element instanceof WildcardNode) {
+      this.drawWildcardNode(element.asWildcardNode(), svgElement);
+    }  
   }
 
   public drawOperatorGroup(
@@ -710,6 +722,207 @@ export class VariantDrawerDirective
 
     if (this.onMouseOverCbFc) {
       this.onMouseOverCbFc(this, loopGroup, this.variant, parent);
+    }
+  }
+
+  drawAnythingNode(element: AnythingNode, parent: Selection<any, any, any, any>) {
+    const width = element.getWidth();
+    let height = element.getHeight();
+    const polygonPoints = this.polygonService.getPolygonPoints(width, height);
+
+    const color = "transparent";
+
+    let laElement = getLowestSelectionActionableElement(element);
+
+    let actionable =
+      laElement.parent !== null &&
+      laElement.infixSelectableState !== SelectableState.None;
+
+    let polygon = this.createPolygon(
+      parent,
+      polygonPoints,
+      color,
+      actionable,
+      false
+    );
+
+    if (this.traceInfixSelectionMode) {
+      this.addInfixSelectionAttributes(element, polygon, true);
+    }
+
+    const textcolor = "white";
+
+    const activityText = parent
+      .append('text')
+      .attr('x', width / 2)
+      .attr('y', height / 2)
+      .classed('user-select-none', true)
+      .attr('text-anchor', 'middle')
+      .attr('dominant-baseline', 'middle')
+      .attr('font-size', 33)
+      .attr('fill', textcolor)
+      .classed('activity-text', true);
+
+    let y = height / 2;
+
+    let truncated = false;
+    let dy = 0;
+
+    element.activity.forEach((a, _i) => {
+      const tspan = activityText
+        .append('tspan')
+        .attr('x', width / 2)
+        .attr('y', y + dy)
+        .classed(
+          'cursor-pointer',
+          (!this.traceInfixSelectionMode || actionable) && this.addCursorPointer
+        )
+        .text(a);
+
+      dy += VARIANT_Constants.FONT_SIZE + VARIANT_Constants.MARGIN_Y;
+      tspan.attr(
+        'height',
+        VARIANT_Constants.FONT_SIZE + VARIANT_Constants.MARGIN_Y
+      );
+
+      const maxWidth =
+        element.getWidth() -
+        element.getHeadLength() * 2 -
+        VARIANT_Constants.MARGIN_X;
+      const tr = this.wrapInnerLabelText(tspan, a, maxWidth);
+      truncated ||= tr;
+
+      if (a === 'W_Nabellen incomplete dossiers' && !tr) {
+        console.log('Did not wrap', a, tspan, maxWidth);
+      }
+    });
+
+    if (truncated) {
+      activityText
+        .attr('title', element.activity.join(';'))
+        .attr('data-bs-toggle', 'tooltip');
+      // manually trigger tooltip through jquery
+      activityText.on('mouseenter', (e: PointerEvent, data) => {
+        // @ts-ignore
+        this.variantService.activityTooltipReference = $(e.target);
+        this.variantService.activityTooltipReference.tooltip('show');
+      });
+    }
+
+    if (this.onClickCbFc) {
+      parent.on('click', (e: PointerEvent) => {
+        this.onVariantClick(element);
+        // hide the tooltip
+        if (this.variantService.activityTooltipReference) {
+          this.variantService.activityTooltipReference.tooltip('hide');
+        }
+        e.stopPropagation();
+      });
+    }
+
+    if (this.onMouseOverCbFc) {
+      this.onMouseOverCbFc(this, element, this.variant, parent);
+    }
+  }
+
+  drawWildcardNode(element: WildcardNode, parent: Selection<any, any, any, any>) {
+    const width = element.getWidth();
+    let height = element.getHeight();
+    const polygonPoints = this.polygonService.getPolygonPoints(width, height);
+
+    const color = "#b1b1b142"
+
+    let laElement = getLowestSelectionActionableElement(element);
+
+    let actionable =
+      laElement.parent !== null &&
+      laElement.infixSelectableState !== SelectableState.None;
+
+    let polygon = this.createPolygon(
+      parent,
+      polygonPoints,
+      color,
+      actionable,
+      false
+    );
+
+    if (this.traceInfixSelectionMode) {
+      this.addInfixSelectionAttributes(element, polygon, true);
+    }
+
+    const textcolor = "white";
+
+    const activityText = parent
+      .append('text')
+      .attr('x', width / 2)
+      .attr('y', height / 2)
+      .classed('user-select-none', true)
+      .attr('text-anchor', 'middle')
+      .attr('dominant-baseline', 'middle')
+      .attr('font-size', VARIANT_Constants.FONT_SIZE)
+      .attr('font-weight', 'bold')
+      .attr('fill', textcolor)
+      .classed('activity-text', true);
+
+    let y = height / 2;
+
+    let truncated = false;
+    let dy = 0;
+
+    element.activity.forEach((a, _i) => {
+      const tspan = activityText
+        .append('tspan')
+        .attr('x', width / 2)
+        .attr('y', y + dy)
+        .classed(
+          'cursor-pointer',
+          (!this.traceInfixSelectionMode || actionable) && this.addCursorPointer
+        )
+        .text(a);
+
+      dy += VARIANT_Constants.FONT_SIZE + VARIANT_Constants.MARGIN_Y;
+      tspan.attr(
+        'height',
+        VARIANT_Constants.FONT_SIZE + VARIANT_Constants.MARGIN_Y
+      );
+
+      const maxWidth =
+        element.getWidth() -
+        element.getHeadLength() * 2 -
+        VARIANT_Constants.MARGIN_X;
+      const tr = this.wrapInnerLabelText(tspan, a, maxWidth);
+      truncated ||= tr;
+
+      if (a === 'W_Nabellen incomplete dossiers' && !tr) {
+        console.log('Did not wrap', a, tspan, maxWidth);
+      }
+    });
+
+    if (truncated) {
+      activityText
+        .attr('title', element.activity.join(';'))
+        .attr('data-bs-toggle', 'tooltip');
+      // manually trigger tooltip through jquery
+      activityText.on('mouseenter', (e: PointerEvent, data) => {
+        // @ts-ignore
+        this.variantService.activityTooltipReference = $(e.target);
+        this.variantService.activityTooltipReference.tooltip('show');
+      });
+    }
+
+    if (this.onClickCbFc) {
+      parent.on('click', (e: PointerEvent) => {
+        this.onVariantClick(element);
+        // hide the tooltip
+        if (this.variantService.activityTooltipReference) {
+          this.variantService.activityTooltipReference.tooltip('hide');
+        }
+        e.stopPropagation();
+      });
+    }
+
+    if (this.onMouseOverCbFc) {
+      this.onMouseOverCbFc(this, element, this.variant, parent);
     }
   }
 
@@ -1447,6 +1660,180 @@ export class VariantDrawerDirective
         this.variantService.activityTooltipReference.tooltip('show');
       });
     }
+
+    if (this.onClickCbFc) {
+      parent.on('click', (e: PointerEvent) => {
+        this.onVariantClick(element);
+        // hide the tooltip
+        if (this.variantService.activityTooltipReference) {
+          this.variantService.activityTooltipReference.tooltip('hide');
+        }
+        e.stopPropagation();
+      });
+    }
+
+    if (this.onMouseOverCbFc) {
+      this.onMouseOverCbFc(this, element, this.variant, parent);
+    }
+  }
+
+  public drawStartNode(
+    element: StartNode,
+    parent: Selection<any, any, any, any>
+  ): void {
+    const width = element.getWidth(false);
+    let height = element.getHeight();
+    const polygonPoints = this.polygonService.getPolygonPoints(width, height);
+
+    const color = "transparent"
+
+    let laElement = getLowestSelectionActionableElement(element);
+
+    let actionable =
+      laElement.parent !== null &&
+      laElement.infixSelectableState !== SelectableState.None;
+
+    let polygon = this.createPolygon(
+      parent,
+      polygonPoints,
+      color,
+      actionable,
+      false
+    );
+
+    if (this.traceInfixSelectionMode) {
+      this.addInfixSelectionAttributes(element, polygon, true);
+    }
+
+    const textcolor = "white";
+
+    // const backgroundRect = parent
+    //   .append('rect')
+    //   .attr('x', 20)
+    //   .attr('y', 0)
+    //   .attr('width', width - 40)
+    //   .attr('height', VARIANT_Constants.FONT_SIZE)
+    //   .style('fill', '#a5000080')
+
+    const activityText = parent
+      .append('text')
+      .attr('x', width / 2)
+      .attr('y', height / 2)
+      .classed('user-select-none', true)
+      .attr('text-anchor', 'middle')
+      .attr('dominant-baseline', 'middle')
+      .attr('font-size', VARIANT_Constants.FONT_SIZE)
+      .attr('font-weight', 'bold')
+      .attr('fill', textcolor)
+      .classed('activity-text', true);
+
+    let y = height / 2;
+
+    let dy = 0;
+
+    const tspan = activityText
+        .append('tspan')
+        .attr('x', width / 2)
+        .attr('y', y + dy)
+        .text("START");
+
+    //tspan.attr(
+    //    'height',
+    //    VARIANT_Constants.FONT_SIZE + VARIANT_Constants.MARGIN_Y
+    //);
+
+    //const maxWidth =
+    //    element.getWidth(false) -
+    //    element.getHeadLength() * 2 -
+    //    VARIANT_Constants.MARGIN_X;
+    //this.wrapInnerLabelText(tspan, "START", maxWidth);
+
+    if (this.onClickCbFc) {
+      parent.on('click', (e: PointerEvent) => {
+        this.onVariantClick(element);
+        // hide the tooltip
+        if (this.variantService.activityTooltipReference) {
+          this.variantService.activityTooltipReference.tooltip('hide');
+        }
+        e.stopPropagation();
+      });
+    }
+
+    if (this.onMouseOverCbFc) {
+      this.onMouseOverCbFc(this, element, this.variant, parent);
+    }
+  }
+
+  public drawEndNode(
+    element: EndNode,
+    parent: Selection<any, any, any, any>
+  ): void {
+    const width = element.getWidth(false);
+    let height = element.getHeight();
+    const polygonPoints = this.polygonService.getPolygonPoints(width, height);
+
+    const color = "transparent"
+
+    let laElement = getLowestSelectionActionableElement(element);
+
+    let actionable =
+      laElement.parent !== null &&
+      laElement.infixSelectableState !== SelectableState.None;
+
+    let polygon = this.createPolygon(
+      parent,
+      polygonPoints,
+      color,
+      actionable,
+      false
+    );
+
+    if (this.traceInfixSelectionMode) {
+      this.addInfixSelectionAttributes(element, polygon, true);
+    }
+
+    const textcolor = "white";
+
+    // const backgroundRect = parent
+    //   .append('rect')
+    //   .attr('x', 20)
+    //   .attr('y', 0)
+    //   .attr('width', width - 40)
+    //   .attr('height', VARIANT_Constants.FONT_SIZE)
+    //   .style('fill', '#a5000080')
+
+    const activityText = parent
+      .append('text')
+      .attr('x', width / 2)
+      .attr('y', height / 2)
+      .classed('user-select-none', true)
+      .attr('text-anchor', 'middle')
+      .attr('dominant-baseline', 'middle')
+      .attr('font-size', VARIANT_Constants.FONT_SIZE)
+      .attr('font-weight', 'bold')
+      .attr('fill', textcolor)
+      .classed('activity-text', true);
+
+    let y = height / 2;
+
+    let dy = 0;
+
+    const tspan = activityText
+        .append('tspan')
+        .attr('x', width / 2)
+        .attr('y', y + dy)
+        .text("END");
+
+    //tspan.attr(
+    //    'height',
+    //    VARIANT_Constants.FONT_SIZE + VARIANT_Constants.MARGIN_Y
+    //);
+
+    //const maxWidth =
+    //    element.getWidth(false) -
+    //    element.getHeadLength() * 2 -
+    //    VARIANT_Constants.MARGIN_X;
+    //this.wrapInnerLabelText(tspan, "START", maxWidth);
 
     if (this.onClickCbFc) {
       parent.on('click', (e: PointerEvent) => {
