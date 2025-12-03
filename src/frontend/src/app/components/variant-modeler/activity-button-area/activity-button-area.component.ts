@@ -50,7 +50,10 @@ export class ActivityButtonAreaComponent
   @Input()
   redrawSingal: boolean = false;
 
-  activityDummyVariants: Map<string, VariantElement> = new Map<string, VariantElement>();
+  activityDummyVariants: Map<string, VariantElement> = new Map<
+    string,
+    VariantElement
+  >();
 
   @Output()
   activityButtonClick = new EventEmitter();
@@ -182,11 +185,9 @@ export class ActivityButtonAreaComponent
     const children = variant.getElements();
     if (variant instanceof LeafNode) {
       return leaf.asLeafNode().activity[0] === variant.asLeafNode().activity[0];
-    }
-    else if (variant instanceof WildcardNode) {
+    } else if (variant instanceof WildcardNode) {
       return true;
-    }
-    else {
+    } else {
       if (children) {
         for (const child of children) {
           if (this.activityExist(leaf, child)) {

@@ -351,7 +351,7 @@ export class VariantDrawerDirective
       this.drawAnythingNode(element.asAnythingNode(), svgElement);
     } else if (element instanceof WildcardNode) {
       this.drawWildcardNode(element.asWildcardNode(), svgElement);
-    }  
+    }
   }
 
   public drawOperatorGroup(
@@ -451,7 +451,6 @@ export class VariantDrawerDirective
     }
 
     if (this.onClickCbFc) {
-      
       parent.on('click', (e: PointerEvent) => {
         this.onVariantClick(element);
         e.stopPropagation();
@@ -481,14 +480,13 @@ export class VariantDrawerDirective
 
     // Optional icon (question mark)
     const optH = 25;
-    const startX = width - (2 * iconSpacing);
+    const startX = width - 2 * iconSpacing;
     const iconY = VARIANT_Constants.MARGIN_Y;
     const circleX = startX;
     const circleY = iconY;
     const radius = optH / 2;
 
-    const optionalGroup = iconsGroup
-      .append('g');
+    const optionalGroup = iconsGroup.append('g');
 
     // background rect (rounded)
     const optionalCircle = optionalGroup
@@ -496,20 +494,20 @@ export class VariantDrawerDirective
       .attr('cx', circleX)
       .attr('cy', circleY)
       .attr('r', radius)
-    .attr('fill', '#df3806c2')
-    .attr('stroke', '#ffffff8e');
+      .attr('fill', '#df3806c2')
+      .attr('stroke', '#ffffff8e');
 
     // small question mark icon (left inside rect)
     optionalGroup
       .append('text')
       .attr('x', circleX)
       .attr('y', circleY + 1)
-      .attr('text-anchor', 'middle')         // horizontal center
-      .attr('dominant-baseline', 'middle')   // vertical center
+      .attr('text-anchor', 'middle') // horizontal center
+      .attr('dominant-baseline', 'middle') // vertical center
       .attr('font-size', radius * 1.5)
       .attr('font-weight', 'bold')
       .attr('fill', '#fff')
-      .style('pointer-events', 'none') 
+      .style('pointer-events', 'none')
       .text('?');
 
     (optionalCircle as any).on('click', (event: PointerEvent) => {
@@ -524,12 +522,11 @@ export class VariantDrawerDirective
     }
 
     // Repeatable icon (circular arrow)
-    const repeatGroup = iconsGroup
-      .append('g');
+    const repeatGroup = iconsGroup.append('g');
 
     // background rect (rounded)
-    
-    const repeatCircle =repeatGroup
+
+    const repeatCircle = repeatGroup
       .append('circle')
       .attr('cx', circleX + iconSpacing)
       .attr('cy', circleY)
@@ -539,16 +536,16 @@ export class VariantDrawerDirective
 
     // small question mark icon (left inside rect)
     repeatGroup
-    .append('text')
-    .attr('x', circleX + iconSpacing)
-    .attr('y', circleY)
-    .attr('text-anchor', 'middle')         // horizontal center
-    .attr('dominant-baseline', 'middle')   // vertical center
-    .attr('font-size', radius * 0.75)
-    .attr('font-weight', 'bold')
-    .attr('fill', '#fff')
-    .style('pointer-events', 'none')
-    .text(`${repeatCount}x⟳`);
+      .append('text')
+      .attr('x', circleX + iconSpacing)
+      .attr('y', circleY)
+      .attr('text-anchor', 'middle') // horizontal center
+      .attr('dominant-baseline', 'middle') // vertical center
+      .attr('font-size', radius * 0.75)
+      .attr('font-weight', 'bold')
+      .attr('fill', '#fff')
+      .style('pointer-events', 'none')
+      .text(`${repeatCount}x⟳`);
 
     (repeatCircle as any).on('click', (event: PointerEvent) => {
       event.stopPropagation();
@@ -573,61 +570,64 @@ export class VariantDrawerDirective
     }
   }
 
-  private onRepeatClick(circleNode: SVGGraphicsElement, element: OperatorGroup) {
-      if (!circleNode) return;
-      const rect = circleNode.getBoundingClientRect();
-      const input = document.createElement('input');
-      input.type = 'number';
-      input.min = '1';
-      input.value = String(element.getRepeatCount());
-      input.style.position = 'absolute';
-      input.style.left = `${rect.left - rect.width * 0.4}px`;
-      input.style.top = `${rect.top - rect.height * 0.15}px`;
-      input.style.width = `${rect.width * 1}px`;
-      input.style.height = `${rect.height * 1}px`;
-      input.style.fontSize = `${Math.max(12, rect.height * 0.6)}px`;
-      input.style.zIndex = '10000';
-      input.style.padding = '2px 6px';
-      input.style.borderRadius = '4px';
-      input.style.border = '1px solid #ffffffa6';
-      input.style.backgroundColor = '#5a5a5a93';
-      (document.body || document.documentElement).appendChild(input);
-      input.focus();
-      input.select();
+  private onRepeatClick(
+    circleNode: SVGGraphicsElement,
+    element: OperatorGroup
+  ) {
+    if (!circleNode) return;
+    const rect = circleNode.getBoundingClientRect();
+    const input = document.createElement('input');
+    input.type = 'number';
+    input.min = '1';
+    input.value = String(element.getRepeatCount());
+    input.style.position = 'absolute';
+    input.style.left = `${rect.left - rect.width * 0.4}px`;
+    input.style.top = `${rect.top - rect.height * 0.15}px`;
+    input.style.width = `${rect.width * 1}px`;
+    input.style.height = `${rect.height * 1}px`;
+    input.style.fontSize = `${Math.max(12, rect.height * 0.6)}px`;
+    input.style.zIndex = '10000';
+    input.style.padding = '2px 6px';
+    input.style.borderRadius = '4px';
+    input.style.border = '1px solid #ffffffa6';
+    input.style.backgroundColor = '#5a5a5a93';
+    (document.body || document.documentElement).appendChild(input);
+    input.focus();
+    input.select();
 
-      const cleanup = () => {
-        input.removeEventListener('keydown', onKey);
-        window.removeEventListener('mousedown', onWindowMouse);
-        if (input.parentElement) input.parentElement.removeChild(input);
-      };
+    const cleanup = () => {
+      input.removeEventListener('keydown', onKey);
+      window.removeEventListener('mousedown', onWindowMouse);
+      if (input.parentElement) input.parentElement.removeChild(input);
+    };
 
-      const submit = () => {
-        const v = parseInt(input.value, 10);
-        if (!isNaN(v) && v >= 1) {
-          element.setRepeatCount(v);
-          this.redraw();
-        }
+    const submit = () => {
+      const v = parseInt(input.value, 10);
+      if (!isNaN(v) && v >= 1) {
+        element.setRepeatCount(v);
+        this.redraw();
+      }
+      cleanup();
+    };
+
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Enter') {
+        submit();
+      } else if (e.key === 'Escape') {
         cleanup();
-      };
+      }
+    };
 
-      const onKey = (e: KeyboardEvent) => {
-        if (e.key === 'Enter') {
-          submit();
-        } else if (e.key === 'Escape') {
-          cleanup();
-        }
-      };
+    // click outside -> submit and close
+    const onWindowMouse = (e: MouseEvent) => {
+      if (e.target !== input) {
+        submit();
+      }
+    };
 
-      // click outside -> submit and close
-      const onWindowMouse = (e: MouseEvent) => {
-        if (e.target !== input) {
-          submit();
-        }
-      };
-
-      input.addEventListener('keydown', onKey);
-      // add outside click listener asynchronously to avoid immediate trigger
-      window.addEventListener('click', onWindowMouse);
+    input.addEventListener('keydown', onKey);
+    // add outside click listener asynchronously to avoid immediate trigger
+    window.addEventListener('click', onWindowMouse);
   }
 
   public drawLoopGroup(
@@ -725,12 +725,15 @@ export class VariantDrawerDirective
     }
   }
 
-  drawAnythingNode(element: AnythingNode, parent: Selection<any, any, any, any>) {
+  drawAnythingNode(
+    element: AnythingNode,
+    parent: Selection<any, any, any, any>
+  ) {
     const width = element.getWidth();
     let height = element.getHeight();
     const polygonPoints = this.polygonService.getPolygonPoints(width, height);
 
-    const color = "transparent";
+    const color = 'transparent';
 
     let laElement = getLowestSelectionActionableElement(element);
 
@@ -750,7 +753,7 @@ export class VariantDrawerDirective
       this.addInfixSelectionAttributes(element, polygon, true);
     }
 
-    const textcolor = "white";
+    const textcolor = 'white';
 
     const activityText = parent
       .append('text')
@@ -825,12 +828,15 @@ export class VariantDrawerDirective
     }
   }
 
-  drawWildcardNode(element: WildcardNode, parent: Selection<any, any, any, any>) {
+  drawWildcardNode(
+    element: WildcardNode,
+    parent: Selection<any, any, any, any>
+  ) {
     const width = element.getWidth();
     let height = element.getHeight();
     const polygonPoints = this.polygonService.getPolygonPoints(width, height);
 
-    const color = "#b1b1b142"
+    const color = '#b1b1b142';
 
     let laElement = getLowestSelectionActionableElement(element);
 
@@ -850,7 +856,7 @@ export class VariantDrawerDirective
       this.addInfixSelectionAttributes(element, polygon, true);
     }
 
-    const textcolor = "white";
+    const textcolor = 'white';
 
     const activityText = parent
       .append('text')
@@ -1146,7 +1152,6 @@ export class VariantDrawerDirective
       this.addInfixSelectionAttributes(element, polygon, false);
     }
 
-
     if (this.onRightMouseClickCbFc || this.contextMenuComponent) {
       parent.on('contextmenu', (e: PointerEvent) => {
         e.preventDefault();
@@ -1182,8 +1187,7 @@ export class VariantDrawerDirective
       .attr('dominant-baseline', 'middle')
       .attr(
         'font-size',
-        (VARIANT_Constants.LEAF_HEIGHT + VARIANT_Constants.MARGIN_Y) *
-          1 +
+        (VARIANT_Constants.LEAF_HEIGHT + VARIANT_Constants.MARGIN_Y) * 1 +
           VARIANT_Constants.MARGIN_Y
       )
       .attr('font-weight', 300)
@@ -1194,9 +1198,9 @@ export class VariantDrawerDirective
     const marginY = VARIANT_Constants.MARGIN_Y;
     const numberOfElements = element.elements.length;
     const elementsToShow = Math.min(3, numberOfElements);
-    let y = VARIANT_Constants.MARGIN_Y - (elementsToShow/2)*marginY;
+    let y = VARIANT_Constants.MARGIN_Y - (elementsToShow / 2) * marginY;
     if (elementsToShow == 1) {
-      y = VARIANT_Constants.MARGIN_Y
+      y = VARIANT_Constants.MARGIN_Y;
     }
     let x = 2 * VARIANT_Constants.MARGIN_X;
     let startIdx = numberOfElements - elementsToShow;
@@ -1206,35 +1210,33 @@ export class VariantDrawerDirective
       this.draw(child, g, false);
       y += marginY;
       x += marginX;
-    }      
+    }
 
-    const collapseButton = parent
-      .append('g')
-      .style('cursor', 'pointer');
+    const collapseButton = parent.append('g').style('cursor', 'pointer');
 
     // background rect (rounded)
     let circleX = width - 15;
     let circleY = 10;
     let radius = 20 / 2;
     const circle = collapseButton
-    .append('circle')
-    .attr('cx', circleX)
-    .attr('cy', circleY)
-    .attr('r', radius)
-    .attr('fill', '#66666680')
-    .attr('stroke', '#ffffff8e');
+      .append('circle')
+      .attr('cx', circleX)
+      .attr('cy', circleY)
+      .attr('r', radius)
+      .attr('fill', '#66666680')
+      .attr('stroke', '#ffffff8e');
 
     collapseButton
-    .append('text')
-    .attr('x', circleX)
-    .attr('y', circleY + 1)
-    .attr('text-anchor', 'middle')         // horizontal center
-    .attr('dominant-baseline', 'middle')   // vertical center
-    .attr('font-size', radius * 2)
-    .attr('font-weight', 'bold')
-    .attr('fill', '#fff')
-    .style('pointer-events', 'none')       // let clicks pass to the circle/group
-    .text('+');
+      .append('text')
+      .attr('x', circleX)
+      .attr('y', circleY + 1)
+      .attr('text-anchor', 'middle') // horizontal center
+      .attr('dominant-baseline', 'middle') // vertical center
+      .attr('font-size', radius * 2)
+      .attr('font-weight', 'bold')
+      .attr('fill', '#fff')
+      .style('pointer-events', 'none') // let clicks pass to the circle/group
+      .text('+');
 
     // attach click listener directly to the polygon selection
     (circle as any).on('click', (event: PointerEvent) => {
@@ -1242,7 +1244,6 @@ export class VariantDrawerDirective
       element.toggleCollapsed();
       this.redraw();
     });
-    
 
     if (this.onMouseOverCbFc) {
       this.onMouseOverCbFc(this, element, this.variant, parent);
@@ -1404,33 +1405,31 @@ export class VariantDrawerDirective
       .text('}');
 
     // Button to collapse/expand choice group
-    const collapseButton = parent
-      .append('g')
-      .style('cursor', 'pointer');
+    const collapseButton = parent.append('g').style('cursor', 'pointer');
 
     // background rect (rounded)
     let circleX = width - 15;
     let circleY = 10;
     let radius = 20 / 2;
     const circle = collapseButton
-    .append('circle')
-    .attr('cx', circleX)
-    .attr('cy', circleY)
-    .attr('r', radius)
-    .attr('fill', '#66666680')
-    .attr('stroke', '#ffffff8e');
+      .append('circle')
+      .attr('cx', circleX)
+      .attr('cy', circleY)
+      .attr('r', radius)
+      .attr('fill', '#66666680')
+      .attr('stroke', '#ffffff8e');
 
     collapseButton
-    .append('text')
-    .attr('x', circleX)
-    .attr('y', circleY + 1)
-    .attr('text-anchor', 'middle')         // horizontal center
-    .attr('dominant-baseline', 'middle')   // vertical center
-    .attr('font-size', radius * 2)
-    .attr('font-weight', 'bold')
-    .attr('fill', '#fff')
-    .style('pointer-events', 'none')       // let clicks pass to the circle/group
-    .text('-');
+      .append('text')
+      .attr('x', circleX)
+      .attr('y', circleY + 1)
+      .attr('text-anchor', 'middle') // horizontal center
+      .attr('dominant-baseline', 'middle') // vertical center
+      .attr('font-size', radius * 2)
+      .attr('font-weight', 'bold')
+      .attr('fill', '#fff')
+      .style('pointer-events', 'none') // let clicks pass to the circle/group
+      .text('-');
 
     // attach click listener directly to the polygon selection
     (circle as any).on('click', (event: PointerEvent) => {
@@ -1444,8 +1443,6 @@ export class VariantDrawerDirective
       this.onMouseOverCbFc(this, element, this.variant, parent);
     }
   }
-
-  
 
   drawFallthroughGroup(
     element: FallthroughGroup,
@@ -1685,7 +1682,7 @@ export class VariantDrawerDirective
     let height = element.getHeight();
     const polygonPoints = this.polygonService.getPolygonPoints(width, height);
 
-    const color = "transparent"
+    const color = 'transparent';
 
     let laElement = getLowestSelectionActionableElement(element);
 
@@ -1705,7 +1702,7 @@ export class VariantDrawerDirective
       this.addInfixSelectionAttributes(element, polygon, true);
     }
 
-    const textcolor = "white";
+    const textcolor = 'white';
 
     // const backgroundRect = parent
     //   .append('rect')
@@ -1732,10 +1729,10 @@ export class VariantDrawerDirective
     let dy = 0;
 
     const tspan = activityText
-        .append('tspan')
-        .attr('x', width / 2)
-        .attr('y', y + dy)
-        .text("START");
+      .append('tspan')
+      .attr('x', width / 2)
+      .attr('y', y + dy)
+      .text('START');
 
     //tspan.attr(
     //    'height',
@@ -1772,7 +1769,7 @@ export class VariantDrawerDirective
     let height = element.getHeight();
     const polygonPoints = this.polygonService.getPolygonPoints(width, height);
 
-    const color = "transparent"
+    const color = 'transparent';
 
     let laElement = getLowestSelectionActionableElement(element);
 
@@ -1792,7 +1789,7 @@ export class VariantDrawerDirective
       this.addInfixSelectionAttributes(element, polygon, true);
     }
 
-    const textcolor = "white";
+    const textcolor = 'white';
 
     // const backgroundRect = parent
     //   .append('rect')
@@ -1819,10 +1816,10 @@ export class VariantDrawerDirective
     let dy = 0;
 
     const tspan = activityText
-        .append('tspan')
-        .attr('x', width / 2)
-        .attr('y', y + dy)
-        .text("END");
+      .append('tspan')
+      .attr('x', width / 2)
+      .attr('y', y + dy)
+      .text('END');
 
     //tspan.attr(
     //    'height',

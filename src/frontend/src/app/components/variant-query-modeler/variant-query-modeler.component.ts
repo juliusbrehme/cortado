@@ -38,7 +38,7 @@ import {
   StartNode,
   EndNode,
   WildcardNode,
-  AnythingNode
+  AnythingNode,
 } from 'src/app/objects/Variants/variant_element';
 import { collapsingText, fadeInText } from 'src/app/animations/text-animations';
 import { findPathToSelectedNode } from 'src/app/objects/Variants/utility_functions';
@@ -134,7 +134,6 @@ export class VariantQueryModelerComponent
           this.activityNames.sort();
         }
       });
-
 
     this.logService.loadedEventLog$
       .pipe(takeUntil(this._destroy$))
@@ -449,7 +448,11 @@ export class VariantQueryModelerComponent
     this.curInfixType = infixtype;
   }
 
-  handleBehindInsert(variant: VariantElement, leaf: VariantElement, selectedElement) {
+  handleBehindInsert(
+    variant: VariantElement,
+    leaf: VariantElement,
+    selectedElement
+  ) {
     const children = variant.getElements();
 
     if (children) {
@@ -542,7 +545,11 @@ export class VariantQueryModelerComponent
     }
   }
 
-  handleReplace(variant: VariantElement, leaf: VariantElement, selectedElement) {
+  handleReplace(
+    variant: VariantElement,
+    leaf: VariantElement,
+    selectedElement
+  ) {
     const children = variant.getElements();
 
     if (children) {
@@ -1178,8 +1185,8 @@ export class VariantQueryModelerComponent
     const current = this.currentVariant;
     console.log(current.serialize());
     this.variantService.variants = [];
-    return
-    const observable = this.backendService.visualQuery(current)
+    return;
+    const observable = this.backendService.visualQuery(current);
     observable.subscribe((res) => {
       const variants = res['variants'];
       for (const v of variants) {

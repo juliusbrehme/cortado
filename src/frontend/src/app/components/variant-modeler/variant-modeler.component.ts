@@ -31,7 +31,7 @@ import {
   LeafNode,
   ParallelGroup,
   SequenceGroup,
-  VariantElement
+  VariantElement,
 } from 'src/app/objects/Variants/variant_element';
 import { collapsingText, fadeInText } from 'src/app/animations/text-animations';
 import { findPathToSelectedNode } from 'src/app/objects/Variants/utility_functions';

@@ -1046,7 +1046,6 @@ export class FallthroughGroup extends VariantElement {
 }
 
 export class ChoiceGroup extends VariantElement {
-
   public isCollapsed: boolean = false;
 
   public getCollapsed(): boolean {
@@ -1202,7 +1201,7 @@ export class ChoiceGroup extends VariantElement {
     if (this.isCollapsed) {
       // For the collapsed view, we have to readjust
       numberOfElements = 1;
-    } 
+    }
     this.elements.forEach((el) => (el.width = undefined));
     let headLength = this.getHeadLength();
     this.width =
@@ -1834,16 +1833,15 @@ export class EndNode extends VariantElement {
 }
 
 export class AnythingNode extends VariantElement {
-  
   public activity: string[];
-  
+
   constructor(
     performance: any = undefined,
     public conformance: number[] = undefined,
     public id: number = undefined
   ) {
     super(performance);
-    this.activity = ['...']
+    this.activity = ['...'];
   }
 
   public textLength = 10;
@@ -1947,16 +1945,15 @@ export class AnythingNode extends VariantElement {
 }
 
 export class WildcardNode extends VariantElement {
-  
   public activity: string[];
-  
+
   constructor(
     performance: any = undefined,
     public conformance: number[] = undefined,
     public id: number = undefined
   ) {
     super(performance);
-    this.activity = ['?Wildcard?']
+    this.activity = ['?Wildcard?'];
   }
 
   public textLength = 10;
