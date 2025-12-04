@@ -24,6 +24,7 @@ from api.routes.variants.utils import (
     map_clusters,
 )
 from cache import cache_util
+from endpoints.query_variant import evaluate_pattern_agains_variant_graphs
 
 # i think its better to have one prefix for everything which
 # is related to variants instead of defining a prefix for
@@ -82,6 +83,10 @@ class IdQuery(BaseModel):
 class caseQuery(BaseModel):
     index: Any = None
     caseId: Any = None
+
+
+class PatternQuery(BaseModel):
+    pattern: str
 
 
 @router.post("/sortvariant")
@@ -174,3 +179,10 @@ def getCaseActivities(query: caseQuery):
         "keys": key_set,
     }
     return res
+
+
+@router.post("/queryPattern")
+def query_pattern(query: PatternQuery):
+    pattern = Group.deserialize(query.pattern)
+
+    return evaluate_pattern_agains_variant_graphs(pattern, cache.variants)
