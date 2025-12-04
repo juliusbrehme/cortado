@@ -45,6 +45,7 @@ import { findPathToSelectedNode } from 'src/app/objects/Variants/utility_functio
 import { applyInverseStrokeToPoly } from 'src/app/utils/render-utils';
 import { Observable, of, Subject } from 'rxjs';
 import { first, takeUntil, tap } from 'rxjs/operators';
+import { VariantFilterService } from 'src/app/services/variantFilterService/variant-filter.service';
 
 @Component({
   selector: 'app-variant-query-modeler',
@@ -114,6 +115,7 @@ export class VariantQueryModelerComponent
     private logService: LogService,
     private variantService: VariantService,
     private backendService: BackendService,
+    private variantFilterService: VariantFilterService,
     private colorMapService: ColorMapService,
     @Inject(LayoutChangeDirective.GoldenLayoutContainerInjectionToken)
     private container: ComponentContainer,
@@ -1183,19 +1185,17 @@ export class VariantQueryModelerComponent
 
   onFilterVariants() {
     const current = this.currentVariant;
-    console.log(current.serialize());
-    this.variantService.variants = [];
-    return;
-    const observable = this.backendService.visualQuery(current);
+    //this.variantService.variants = [];
+    let variantQuery = current.serialize(1);
+    const observable = this.backendService.visualQuery(variantQuery);
     observable.subscribe((res) => {
-      const variants = res['variants'];
-      for (const v of variants) {
-        const variant = v.deserialize();
-        this.addStatistics(variant).subscribe(() => {
-          this.variantService.variants.push(variant);
-        });
-      }
-      this.applySortOnVariantQueryModeler();
+      const variant_ids = res
+      const variants = [];
+      this.variantFilterService.addVariantFilter(
+            'query filter',
+            new Set(res as Array<number>),
+            "Testing variant query filter"
+          );      
     });
   }
 
@@ -1222,11 +1222,6 @@ export class VariantQueryModelerComponent
     variantExplorer.onSortOrderChanged(false);
   }
 
-  // sortVariant(variant) {
-  //   this.backendService.sortInVariantModeler(variant).subscribe((res) => {
-  //     this.currentVariant = deserialize(res['variants']);
-  //   });
-  // }
 }
 
 export namespace VariantQueryModelerComponent {

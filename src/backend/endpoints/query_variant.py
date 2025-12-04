@@ -42,7 +42,7 @@ def evaluate_pattern_agains_variant_graphs(
         return [
             id
             for id, (variant, _, _, _) in variants.items()
-            if check_variant(pattern, variant)
+            if check_variant(variant, pattern)
         ]
     except Exception as e:
         return {"error": str(e)}

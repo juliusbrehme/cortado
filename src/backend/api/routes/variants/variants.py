@@ -86,7 +86,7 @@ class caseQuery(BaseModel):
 
 
 class PatternQuery(BaseModel):
-    pattern: str
+    pattern: Any = None
 
 
 @router.post("/sortvariant")
@@ -186,3 +186,4 @@ def query_pattern(query: PatternQuery):
     pattern = Group.deserialize(query.pattern)
 
     return evaluate_pattern_agains_variant_graphs(pattern, cache.variants)
+

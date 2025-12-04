@@ -396,15 +396,15 @@ export class BackendService {
   variantQuery(query: string): Observable<any> {
     const queryBody = { queryString: query };
     return this.httpClient.post(
-      ROUTES.HTTP_BASE_URL + ROUTES.QUERY + 'variant-query',
+      ROUTES.HTTP_BASE_URL + 'variant-query',
       queryBody
     );
   }
 
-  visualQuery(query: VariantElement): Observable<any> {
-    const queryBody = { queryVariant: query.serialize() };
+  visualQuery(query: any): Observable<any> {
+    const queryBody = { pattern: query };
     return this.httpClient.post(
-      ROUTES.HTTP_BASE_URL + ROUTES.QUERY + 'visual-query',
+      ROUTES.HTTP_BASE_URL + ROUTES.VARIANT +'queryPattern',
       queryBody
     );
   }
