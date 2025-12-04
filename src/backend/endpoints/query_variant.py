@@ -8,6 +8,7 @@ from cortado_core.visual_query_language.query import check_variant
 
 from typing import Tuple, Mapping, Any
 
+
 def evaluate_query_against_variant_graphs(query, variants, activities):
     ids = []
 
@@ -32,8 +33,16 @@ def evaluate_query_against_variant_graphs(query, variants, activities):
 
     return {"ids": ids}
 
-def evaluate_pattern_agains_variant_graphs(pattern: SequenceGroup, variants: Mapping[int, Tuple[ConcurrencyGroup, Any, Any, Any]]):
-    try: 
-        return [id for id, (variant, _, _, _) in variants.items() if check_variant(pattern, variant)]
+
+def evaluate_pattern_agains_variant_graphs(
+    pattern: SequenceGroup,
+    variants: Mapping[int, Tuple[ConcurrencyGroup, Any, Any, Any]],
+):
+    try:
+        return [
+            id
+            for id, (variant, _, _, _) in variants.items()
+            if check_variant(pattern, variant)
+        ]
     except Exception as e:
         return {"error": str(e)}
