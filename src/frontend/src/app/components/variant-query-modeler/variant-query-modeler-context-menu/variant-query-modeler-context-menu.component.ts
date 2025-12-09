@@ -72,6 +72,16 @@ export class VariantQueryModelerContextMenuComponent {
     this.menuAction.emit({ action: 'end', value: action.value });
   }
 
+  onMakeFallthrough(action: ContextMenuAction<Variant>) {
+    if (!action.value) return;
+    // make fallthrough
+    this.menuAction.emit({ action: 'fallthrough', value: action.value });
+  }
+
+  makeFallthroughDisabled(variant: Variant) {
+    return !variant;
+  }
+
   makeStartOperatorDisabled(variant: Variant) {
     return !variant;
   }

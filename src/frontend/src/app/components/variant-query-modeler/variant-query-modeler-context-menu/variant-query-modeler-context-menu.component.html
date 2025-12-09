@@ -14,7 +14,7 @@
     >
     <div>
       <i class="bi bi-question-circle"></i>
-      Make selection optional
+      Make selection Optional
     </div>
     </ng-template>
     <ng-template
@@ -24,7 +24,7 @@
     >
       <div>
         <i class="bi bi-repeat"></i>
-        Make selection repeatable
+        Make selection Loop
       </div>
     </ng-template>
     <ng-template
@@ -34,7 +34,17 @@
     >
       <div>
         <i class="bi bi-list"></i>
-        Make selection choice
+        Make selection Choice
+      </div>
+    </ng-template>
+    <ng-template
+      contextMenuItem
+      (execute)="onMakeFallthrough($event)"
+      [disabled]="makeFallthroughDisabled"
+    >
+      <div>
+        <i class="bi bi-arrow-left-right"></i>
+        Make selection Fallthrough
       </div>
     </ng-template>
     <ng-template

@@ -736,6 +736,63 @@ export class VariantQueryModelerComponent
     }
   }
 
+  onFallthroughSelected() {
+    const selectedElements = this.variantEnrichedSelection
+      .selectAll('.selected-variant-g')
+      .data();
+    // If nothing selected, nothing to do
+    if (!selectedElements || selectedElements.length === 0) return;
+
+    // We want only one parent so we select just one and check if the selection is valid
+    const parent = this.findParent(this.currentVariant, selectedElements[0]);
+    if (!parent) return;
+
+    const children = parent.getElements();
+
+    // If our selection is within a FallthroughGroup, we do not allow nesting
+    if (parent instanceof FallthroughGroup && selectedElements.length === 1) {
+      return;
+    }
+
+    if (
+      selectedElements.length === 1 &&
+      selectedElements[0] instanceof FallthroughGroup
+    ) {
+      return;
+    }
+
+    // The index where to insert the FallthroughGroup
+    let first_idx = -1;
+    // Check if all selected elements have the same parent and are continuous
+    let current_idx = -1;
+    for (const leaf of selectedElements) {
+      const leaf_parent = this.findParent(this.currentVariant, leaf);
+      if (parent !== leaf_parent) return;
+      const idx = children.indexOf(leaf);
+      if (current_idx == -1) {
+        current_idx = idx;
+        first_idx = idx;
+      } else if (idx !== current_idx + 1) {
+        // Not continuous selection
+        return;
+      }
+      if (idx === -1) return;
+    }
+
+    // Remove selected elements from parent's children
+    children.splice(first_idx, selectedElements.length);
+
+    const fallthrough = new FallthroughGroup(
+      selectedElements as VariantElement[]
+    );
+
+    children.splice(first_idx, 0, fallthrough);
+    parent.setElements(children);
+
+    this.cacheCurrentVariant();
+    this.triggerRedraw();
+  }
+
   onAddWildcardSelected() {
     const leaf = new WildcardNode();
     this.insertCustomNode(leaf);
@@ -770,6 +827,10 @@ export class VariantQueryModelerComponent
 
     if (event.action === 'optional') {
       this.onOptionalSelected();
+    }
+
+    if (event.action === 'fallthrough') {
+      this.onFallthroughSelected();
     }
 
     if (event.action === 'choice') {
