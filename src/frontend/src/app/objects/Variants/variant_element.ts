@@ -673,16 +673,31 @@ export class OperatorGroup extends VariantElement {
     return this.width;
   }
 
+  // Optional Group will be on top of Repeatable Group if both are selected
   public serialize(l = 1) {
-    return {
-      operator: this.elements
+    let parent = null;
+    const elements = this.elements
         .map((e) => e.serialize(l))
         .flat()
-        .filter((e) => e !== null),
-      optional: this.isOptional,
-      repeatable: this.isRepeatable,
-      repeat_count: this.repeatCount,
-    };
+        .filter((e) => e !== null);
+    if (this.isOptional && !this.isRepeatable) {
+      parent = { optional: elements };
+    }
+    else if (this.isRepeatable && this.isOptional) {
+      parent = 
+      { 
+        optional: [
+        {
+          loop: elements, 
+          repeat_count: this.repeatCount
+        }
+      ]
+      }
+    }
+    else if (this.isRepeatable && !this.isOptional) {
+      parent = { loop: elements, repeat_count: this.repeatCount }
+    }
+    return parent
   }
 
   public updateSelectionAttributes(): void {
@@ -1932,7 +1947,7 @@ export class AnythingNode extends VariantElement {
   }
 
   public serialize(l = 1) {
-    return { leaf: this.activity };
+    return { anything: true };
   }
 
   public updateSelectionAttributes(): void {
@@ -1953,7 +1968,7 @@ export class WildcardNode extends VariantElement {
     public id: number = undefined
   ) {
     super(performance);
-    this.activity = ['?Wildcard?'];
+    this.activity = ['Wildcard'];
   }
 
   public textLength = 10;
@@ -2044,7 +2059,7 @@ export class WildcardNode extends VariantElement {
   }
 
   public serialize(l = 1) {
-    return { leaf: this.activity };
+    return { wildcard: true };
   }
 
   public updateSelectionAttributes(): void {
