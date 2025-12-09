@@ -1250,13 +1250,13 @@ export class VariantQueryModelerComponent
     let variantQuery = current.serialize(1);
     const observable = this.backendService.visualQuery(variantQuery);
     observable.subscribe((res) => {
-      const variant_ids = res
+      const variant_ids = res;
       const variants = [];
       this.variantFilterService.addVariantFilter(
-            'query filter',
-            new Set(res as Array<number>),
-            "Testing variant query filter"
-          );      
+        'query filter',
+        new Set(res as Array<number>),
+        'Testing variant query filter'
+      );
     });
   }
 
@@ -1282,7 +1282,6 @@ export class VariantQueryModelerComponent
     variantExplorer.sortingFeature = 'userDefined';
     variantExplorer.onSortOrderChanged(false);
   }
-
 }
 
 export namespace VariantQueryModelerComponent {

@@ -404,7 +404,7 @@ export class BackendService {
   visualQuery(query: any): Observable<any> {
     const queryBody = { pattern: query };
     return this.httpClient.post(
-      ROUTES.HTTP_BASE_URL + ROUTES.VARIANT +'queryPattern',
+      ROUTES.HTTP_BASE_URL + ROUTES.VARIANT + 'queryPattern',
       queryBody
     );
   }

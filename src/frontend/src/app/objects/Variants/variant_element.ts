@@ -677,27 +677,24 @@ export class OperatorGroup extends VariantElement {
   public serialize(l = 1) {
     let parent = null;
     const elements = this.elements
-        .map((e) => e.serialize(l))
-        .flat()
-        .filter((e) => e !== null);
+      .map((e) => e.serialize(l))
+      .flat()
+      .filter((e) => e !== null);
     if (this.isOptional && !this.isRepeatable) {
       parent = { optional: elements };
-    }
-    else if (this.isRepeatable && this.isOptional) {
-      parent = 
-      { 
+    } else if (this.isRepeatable && this.isOptional) {
+      parent = {
         optional: [
-        {
-          loop: elements, 
-          repeat_count: this.repeatCount
-        }
-      ]
-      }
+          {
+            loop: elements,
+            repeat_count: this.repeatCount,
+          },
+        ],
+      };
+    } else if (this.isRepeatable && !this.isOptional) {
+      parent = { loop: elements, repeat_count: this.repeatCount };
     }
-    else if (this.isRepeatable && !this.isOptional) {
-      parent = { loop: elements, repeat_count: this.repeatCount }
-    }
-    return parent
+    return parent;
   }
 
   public updateSelectionAttributes(): void {
