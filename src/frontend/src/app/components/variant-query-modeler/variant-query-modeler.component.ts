@@ -6,6 +6,7 @@ import { GoldenLayoutComponentService } from '../../services/goldenLayoutService
 import { ColorMapService } from '../../services/colorMapService/color-map.service';
 import { ComponentContainer, LogicalZIndex } from 'golden-layout';
 import { SharedDataService } from 'src/app/services/sharedDataService/shared-data.service';
+import Swal from 'sweetalert2';
 import {
   Component,
   ElementRef,
@@ -724,6 +725,14 @@ export class VariantQueryModelerComponent
       const leaf = selectedElements[0] as LeafNode;
       const parent = this.findParent(this.currentVariant, leaf);
       if (!parent) return;
+      else if (parent instanceof ChoiceGroup || parent instanceof ParallelGroup) {
+        this.fireAlert(
+          'Choice Group Error',
+          'A Choice Group cannot be nested within this group.',
+          'info'
+        );
+        return;
+      } 
 
       const children = parent.getElements();
       const idx = children.indexOf(leaf);
@@ -737,6 +746,11 @@ export class VariantQueryModelerComponent
       this.triggerRedraw();
       return;
     }
+    this.fireAlert(
+      'Choice Group Creation Error',
+      'Please select a single activity to create a Choice Group.',
+      'info'
+    );
   }
 
   onFallthroughSelected() {
@@ -808,12 +822,12 @@ export class VariantQueryModelerComponent
 
   onAddStartOperatorSelected() {
     const leaf = new StartNode();
-    this.insertCustomNode(leaf);
+    this.insertStartEndNodes(leaf);
   }
 
   onAddEndOperatorSelected() {
     const leaf = new EndNode();
-    this.insertCustomNode(leaf);
+    this.insertStartEndNodes(leaf);
   }
 
   // Handler for actions emitted by the variant-modeler context menu
@@ -856,6 +870,45 @@ export class VariantQueryModelerComponent
       this.onAddEndOperatorSelected();
     }
   }
+
+  fireAlert(title: string, text: string, icon: any = 'info') {
+    Swal.fire({
+                title:
+                  '<tspan>'+title+'</tspan>',
+                html:
+                  '<b>'+text+'</b>',
+                icon: icon,
+                //position: "bottom-end",
+                showCloseButton: true,
+                showConfirmButton: false,
+                showCancelButton: true,
+                cancelButtonText: 'close',
+                //timer: 2000,
+              });
+  }
+
+  insertStartEndNodes(node: StartNode | EndNode) {
+    const children = this.currentVariant.getElements();
+    if (node instanceof StartNode) {
+      const firstChild = children[0];
+      if (firstChild instanceof StartNode) {
+        this.fireAlert("Node placement not valid", "A start node is already present at the beginning of the variant.", 'info');
+        return;
+      }
+      children.splice(0, 0, node);
+    } else if (node instanceof EndNode) {
+      const lastChild = children[children.length - 1];
+      if (lastChild instanceof EndNode) {
+        this.fireAlert("Node placement not valid", "An end node is already present at the end of the variant.", 'info');
+        return;
+      }
+      children.splice(children.length, 0, node);
+    }
+    this.currentVariant.setElements(children);
+    this.triggerRedraw();
+    this.cacheCurrentVariant();
+  }
+
 
   insertCustomNode(node: VariantElement) {
     if (this.selectedElement || this.emptyVariant) {
