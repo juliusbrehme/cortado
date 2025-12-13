@@ -10,7 +10,7 @@ from cortado_core.models.infix_type import InfixType
 from cortado_core.utils.split_graph import ConcurrencyGroup, Group
 from pm4py.objects.log.obj import Trace
 from fastapi import APIRouter
-from cortado_core.visual_query_language.query import create_query_instance
+from cortado_core.visual_query_language.query import create_query_instance, QueryType
 
 import cache.cache as cache
 from api.routes.variants.models import (
@@ -88,6 +88,7 @@ class caseQuery(BaseModel):
 
 class PatternQuery(BaseModel):
     pattern: Any = None
+    type: Any = None
 
 
 @router.post("/sortvariant")
@@ -185,9 +186,8 @@ def getCaseActivities(query: caseQuery):
 @router.post("/queryPattern")
 def query_pattern(query: PatternQuery):
     pattern = Group.deserialize(query.pattern)
-    query = create_query_instance(pattern)
-    print("Query: ", query)
+    query_type = QueryType[query.type]
+    query = create_query_instance(pattern, query_type=query_type)
     result = evaluate_visual_query_against_variant_graphs(query, cache.variants)
-    print("Result: ", result)
     return result
 

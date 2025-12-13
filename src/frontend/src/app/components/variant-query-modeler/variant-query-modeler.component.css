@@ -49,3 +49,16 @@
   border-top-right-radius: 4px;
 
 }
+
+/* Query type dropdown styling */
+.vq-context-menu-select {
+  background-color: transparent;
+  color: #fff;
+  border: 1px solid var(--thin-border-color);
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.vq-context-menu-option {
+  color: #000; /* options in dropdown list render with default bg */
+}

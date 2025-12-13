@@ -401,8 +401,8 @@ export class BackendService {
     );
   }
 
-  visualQuery(query: any): Observable<any> {
-    const queryBody = { pattern: query };
+  visualQuery(query: any, type: string = 'BFS'): Observable<any> {
+    const queryBody = { pattern: query, type: type };
     return this.httpClient.post(
       ROUTES.HTTP_BASE_URL + ROUTES.VARIANT + 'queryPattern',
       queryBody

@@ -17,6 +17,15 @@
       </div>
     </button>
 
+    <!-- Query Type Selector -->
+    <div class="vq-context-menu__section">
+      <select id="queryTypeSelect" class="vq-context-menu-select" [(ngModel)]="queryType" (change)="onQueryTypeChange()">
+        <option class="vq-context-menu-option" value="DFS">DFS</option>
+        <option class="vq-context-menu-option" value="BFS">BFS</option>
+        <option class="vq-context-menu-option" value="RELAXED_NG">RELAXED_NG</option>
+      </select>
+    </div>
+
     <div class="vr mx-2"></div>
 
     <div class="btn-group round-corners" role="group">

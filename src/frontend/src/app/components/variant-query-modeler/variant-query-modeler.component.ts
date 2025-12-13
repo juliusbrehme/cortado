@@ -108,6 +108,9 @@ export class VariantQueryModelerComponent
 
   redundancyWarning = false;
 
+  // Query type selection for visual pattern matching
+  public queryType: 'DFS' | 'BFS' | 'RELAXED_NG' = 'BFS';
+
   private _destroy$ = new Subject();
 
   constructor(
@@ -1221,6 +1224,10 @@ export class VariantQueryModelerComponent
     this.editor.centerContent(250);
   }
 
+  onQueryTypeChange() {
+    // selection change handled by two-way binding on `queryType`
+  }
+
   computeFocusOffset = (svg) => {
     const path = findPathToSelectedNode(
       this.currentVariant,
@@ -1248,7 +1255,10 @@ export class VariantQueryModelerComponent
     const current = this.currentVariant;
     //this.variantService.variants = [];
     let variantQuery = current.serialize(1);
-    const observable = this.backendService.visualQuery(variantQuery);
+    const observable = this.backendService.visualQuery(
+      variantQuery,
+      this.queryType
+    );
     observable.subscribe((res) => {
       const variant_ids = res;
       const variants = [];
