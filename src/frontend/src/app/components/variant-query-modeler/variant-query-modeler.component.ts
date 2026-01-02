@@ -6,6 +6,7 @@ import { GoldenLayoutComponentService } from '../../services/goldenLayoutService
 import { ColorMapService } from '../../services/colorMapService/color-map.service';
 import { ComponentContainer, LogicalZIndex } from 'golden-layout';
 import { SharedDataService } from 'src/app/services/sharedDataService/shared-data.service';
+import Swal from 'sweetalert2';
 import {
   Component,
   ElementRef,
@@ -417,6 +418,15 @@ export class VariantQueryModelerComponent
   ) {
     const children = variant.getElements();
 
+    if (variant instanceof ChoiceGroup || variant instanceof FallthroughGroup) {
+      this.fireAlert(
+        'Parallel Insertion Error',
+        'Cannot insert parallel activities into this operator group.',
+        'info'
+      );
+      return;
+    }
+
     if (children) {
       const index = children.indexOf(selectedElement);
       if (variant && variant === selectedElement) {
@@ -450,7 +460,7 @@ export class VariantQueryModelerComponent
   }
 
   handleInfixButtonClick(infixtype: InfixType) {
-    this.curInfixType = infixtype;
+    //this.curInfixType = infixtype;
   }
 
   handleBehindInsert(
@@ -616,7 +626,14 @@ export class VariantQueryModelerComponent
       .data();
 
     // If nothing selected, nothing to do
-    if (!selectedElements || selectedElements.length === 0) return;
+    if (!selectedElements || selectedElements.length === 0) {
+      this.fireAlert(
+        'Selection Error',
+        'Please select at least one activity to apply the operator.',
+        'info'
+      );
+      return;
+    }
 
     // We want only one parent so we select just one and check if the selection is valid
     const parent = this.findParent(this.currentVariant, selectedElements[0]);
@@ -628,6 +645,15 @@ export class VariantQueryModelerComponent
     if (parent instanceof OperatorGroup && selectedElements.length === 1) {
       // We toggle the operator on the existing OperatorGroup
       this.toggleOperatorGroup(parent, operatorType);
+      return;
+    }
+
+    if (parent instanceof FallthroughGroup || parent instanceof ChoiceGroup) {
+      this.fireAlert(
+        'Operator Group Error',
+        'Cannot apply operator groups within Fallthrough or Choice Groups.',
+        'info'
+      );
       return;
     }
 
@@ -715,7 +741,14 @@ export class VariantQueryModelerComponent
       .selectAll('.selected-variant-g')
       .data();
     // If nothing selected, nothing to do
-    if (!selectedElements || selectedElements.length === 0) return;
+    if (!selectedElements || selectedElements.length === 0) {
+      this.fireAlert(
+        'Selection Error',
+        'Please select at least one activity to apply the operator.',
+        'info'
+      );
+      return;
+    }
     // If selection is a single LeafNode, replace it by a ChoiceGroup containing that element
     if (
       selectedElements.length === 1 &&
@@ -724,6 +757,21 @@ export class VariantQueryModelerComponent
       const leaf = selectedElements[0] as LeafNode;
       const parent = this.findParent(this.currentVariant, leaf);
       if (!parent) return;
+      else if (!(leaf instanceof LeafNode)) {
+        this.fireAlert(
+          'Choice Group Error',
+          'A Choice Group can just contain Leaf Nodes.',
+          'info'
+        );
+        return;
+      } else if (parent instanceof FallthroughGroup) {
+        this.fireAlert(
+          'Choice Group Error',
+          'Cannot insert operator into a Fallthrough Group.',
+          'info'
+        );
+        return;
+      }
 
       const children = parent.getElements();
       const idx = children.indexOf(leaf);
@@ -737,6 +785,11 @@ export class VariantQueryModelerComponent
       this.triggerRedraw();
       return;
     }
+    this.fireAlert(
+      'Choice Group Error',
+      'A Choice Group can just contain Leaf Nodes.',
+      'info'
+    );
   }
 
   onFallthroughSelected() {
@@ -744,18 +797,29 @@ export class VariantQueryModelerComponent
       .selectAll('.selected-variant-g')
       .data();
     // If nothing selected, nothing to do
-    if (!selectedElements || selectedElements.length === 0) return;
+    if (!selectedElements || selectedElements.length === 0) {
+      this.fireAlert(
+        'Selection Error',
+        'Please select at least one activity to apply the operator.',
+        'info'
+      );
+      return;
+    }
 
     // We want only one parent so we select just one and check if the selection is valid
     const parent = this.findParent(this.currentVariant, selectedElements[0]);
     if (!parent) return;
 
-    const children = parent.getElements();
-
-    // If our selection is within a FallthroughGroup, we do not allow nesting
-    if (parent instanceof FallthroughGroup && selectedElements.length === 1) {
+    if (parent instanceof ChoiceGroup) {
+      this.fireAlert(
+        'Fallthrough Group Error',
+        'Cannot insert operator into a Choice Group.',
+        'info'
+      );
       return;
     }
+
+    const children = parent.getElements();
 
     if (
       selectedElements.length === 1 &&
@@ -769,6 +833,14 @@ export class VariantQueryModelerComponent
     // Check if all selected elements have the same parent and are continuous
     let current_idx = -1;
     for (const leaf of selectedElements) {
+      if (!(leaf instanceof LeafNode)) {
+        this.fireAlert(
+          'Fallthrough Group Error',
+          'A Fallthrough Group can just contain Leaf Nodes.',
+          'info'
+        );
+        return;
+      }
       const leaf_parent = this.findParent(this.currentVariant, leaf);
       if (parent !== leaf_parent) return;
       const idx = children.indexOf(leaf);
@@ -808,12 +880,12 @@ export class VariantQueryModelerComponent
 
   onAddStartOperatorSelected() {
     const leaf = new StartNode();
-    this.insertCustomNode(leaf);
+    this.insertStartEndNodes(leaf);
   }
 
   onAddEndOperatorSelected() {
     const leaf = new EndNode();
-    this.insertCustomNode(leaf);
+    this.insertStartEndNodes(leaf);
   }
 
   // Handler for actions emitted by the variant-modeler context menu
@@ -847,6 +919,7 @@ export class VariantQueryModelerComponent
     if (event.action === 'anything') {
       this.onAddAnythingOperatorSelected();
     }
+    // Dont need those anymore
 
     if (event.action === 'start') {
       this.onAddStartOperatorSelected();
@@ -855,6 +928,50 @@ export class VariantQueryModelerComponent
     if (event.action === 'end') {
       this.onAddEndOperatorSelected();
     }
+  }
+
+  fireAlert(title: string, text: string, icon: any = 'info') {
+    Swal.fire({
+      title: '<tspan>' + title + '</tspan>',
+      html: '<b>' + text + '</b>',
+      icon: icon,
+      //position: "bottom-end",
+      showCloseButton: true,
+      showConfirmButton: false,
+      showCancelButton: true,
+      cancelButtonText: 'close',
+      //timer: 2000,
+    });
+  }
+
+  insertStartEndNodes(node: StartNode | EndNode) {
+    const children = this.currentVariant.getElements();
+    if (node instanceof StartNode) {
+      const firstChild = children[0];
+      if (firstChild instanceof StartNode) {
+        this.fireAlert(
+          'Node placement not valid',
+          'A start node is already present at the beginning of the variant.',
+          'info'
+        );
+        return;
+      }
+      children.splice(0, 0, node);
+    } else if (node instanceof EndNode) {
+      const lastChild = children[children.length - 1];
+      if (lastChild instanceof EndNode) {
+        this.fireAlert(
+          'Node placement not valid',
+          'An end node is already present at the end of the variant.',
+          'info'
+        );
+        return;
+      }
+      children.splice(children.length, 0, node);
+    }
+    this.currentVariant.setElements(children);
+    this.triggerRedraw();
+    this.cacheCurrentVariant();
   }
 
   insertCustomNode(node: VariantElement) {

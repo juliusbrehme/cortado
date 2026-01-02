@@ -640,6 +640,9 @@ export class OperatorGroup extends VariantElement {
   public copy(): OperatorGroup {
     const res = new OperatorGroup(this.elements.map((e) => e.copy()));
     res.expanded = this.expanded;
+    res.isOptional = this.isOptional;
+    res.isRepeatable = this.isRepeatable;
+    res.repeatCount = this.repeatCount;
     return res;
   }
 
@@ -656,6 +659,17 @@ export class OperatorGroup extends VariantElement {
     );
     if (!(this.parent instanceof SkipGroup))
       this.height += this.getMarginY() * 2;
+
+    if (this.isRepeatable) {
+      this.height +=
+        2 * VARIANT_Constants.MARGIN_Y +
+        2 * VARIANT_Constants.FONT_SIZE_OPERATOR;
+    }
+    if (this.isOptional) {
+      this.height +=
+        2 * VARIANT_Constants.MARGIN_Y +
+        2 * VARIANT_Constants.FONT_SIZE_OPERATOR;
+    }
     return this.height;
   }
 
@@ -670,6 +684,12 @@ export class OperatorGroup extends VariantElement {
         2 * this.getMarginX() +
         this.getHeadLength() -
         this.elements[0].getHeadLength();
+    if (this.isRepeatable) {
+      this.width += 2 * VARIANT_Constants.MARGIN_X;
+    }
+    if (this.isOptional) {
+      this.width += 2 * VARIANT_Constants.MARGIN_X;
+    }
     return this.width;
   }
 

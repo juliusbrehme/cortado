@@ -40,9 +40,7 @@ def evaluate_visual_query_against_variant_graphs(
 ):
     try:
         return [
-            id
-            for id, (variant, _, _, _) in variants.items()
-            if query.match(variant)
+            id for id, (variant, _, _, _) in variants.items() if query.match(variant)
         ]
     except Exception as e:
         return {"error": str(e)}

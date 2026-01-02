@@ -54,10 +54,17 @@
 .vq-context-menu-select {
   background-color: transparent;
   color: #fff;
-  border: 1px solid var(--thin-border-color);
+  border: none;
   padding: 4px 8px;
-  border-radius: 4px;
 }
+
+select:focus,
+select:active {
+  border: none;
+  outline: none;
+  box-shadow: none;
+}
+
 
 .vq-context-menu-option {
   color: #000; /* options in dropdown list render with default bg */

@@ -190,4 +190,3 @@ def query_pattern(query: PatternQuery):
     query = create_query_instance(pattern, query_type=query_type)
     result = evaluate_visual_query_against_variant_graphs(query, cache.variants)
     return result
-
