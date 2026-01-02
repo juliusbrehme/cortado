@@ -364,10 +364,14 @@ export class VariantDrawerDirective
     const repeatable = element.getRepeatable();
     const repeatCount = element.getRepeatCount();
     const optional = element.getOptional();
+    let operator_font_size = VARIANT_Constants.FONT_SIZE_OPERATOR;
+    let operator_font_color = '#ddddddff';
+
+    let stroke_color = '#b8b8b880ff';
 
     const polygonPoints = this.polygonService.getPolygonPoints(width, height);
 
-    const operatorColor = '#13F3FF00';
+    const operatorColor = '#4a91e275';
     let laElement = getLowestSelectionActionableElement(element);
     let actionable =
       laElement.parent !== null &&
@@ -382,7 +386,7 @@ export class VariantDrawerDirective
     );
     polygon
       .style('stroke-dasharray', '4 2')
-      .style('stroke', 'gray')
+      .style('stroke', stroke_color)
       .style('stroke-width', '3px');
 
     if (
@@ -425,6 +429,75 @@ export class VariantDrawerDirective
         element.getHeadLength() +
         element.getMarginX() -
         element.elements[0].getHeadLength();
+    }
+
+    if (repeatable) {
+      xOffset += VARIANT_Constants.MARGIN_X;
+    }
+
+    if (optional) {
+      xOffset += VARIANT_Constants.MARGIN_X;
+    }
+
+    // Add small operator icons at the top-right of the wrapper
+    const iconsGroup = parent.append('g');
+
+    const optionalGroup = iconsGroup.append('g');
+
+    let yOffset = VARIANT_Constants.MARGIN_Y + operator_font_size / 2;
+
+    // background rect (rounded)
+    const optionalText = optionalGroup
+      .append('text')
+      .attr('display', 'block')
+      .attr('x', width / 2)
+      .attr('y', yOffset)
+      .classed('user-select-none', true)
+      .attr('text-anchor', 'middle')
+      .attr('dominant-baseline', 'middle')
+      .attr('font-size', operator_font_size)
+      .attr('fill', operator_font_color)
+      //.attr('font-weight', 'bold')
+      .attr('font-style', 'italic')
+      .classed('activity-text', true)
+      .text('? Optional');
+
+    if (optional) {
+      optionalGroup.style('display', 'inline');
+    } else {
+      optionalGroup.style('display', 'none');
+    }
+
+    const repeatGroup = iconsGroup.append('g');
+
+    if (optional) {
+      yOffset += VARIANT_Constants.MARGIN_Y + operator_font_size;
+    }
+
+    const repeatText = repeatGroup
+      .append('text')
+      .attr('display', 'block')
+      .attr('x', width / 2)
+      .attr('y', yOffset)
+      .classed('user-select-none', true)
+      .attr('text-anchor', 'middle')
+      .attr('dominant-baseline', 'middle')
+      .attr('font-size', operator_font_size)
+      // .attr('font-weight', 'bold')
+      .attr('fill', operator_font_color)
+      .classed('activity-text', true)
+      .attr('font-style', 'italic')
+      .text(`${repeatCount} x ⟳`);
+
+    (repeatText as any).on('click', (event: PointerEvent) => {
+      event.stopPropagation();
+      this.onRepeatClick(repeatText.node() as SVGGraphicsElement, element);
+    });
+
+    if (repeatable) {
+      repeatGroup.style('display', 'inline');
+    } else {
+      repeatGroup.style('display', 'none');
     }
 
     for (const child of element.elements) {
@@ -474,96 +547,89 @@ export class VariantDrawerDirective
       });
     }
 
-    // Add small operator icons at the top-right of the wrapper
-    const iconsGroup = parent.append('g');
-    const iconSpacing = 27;
+    // // Add small operator icons at the top-right of the wrapper
+    // const iconsGroup = parent.append('g');
+    // const iconSpacing = 27;
 
-    // Optional icon (question mark)
-    const optH = 25;
-    const startX = width - 2 * iconSpacing;
-    const iconY = VARIANT_Constants.MARGIN_Y;
-    const circleX = startX;
-    const circleY = iconY;
-    const radius = optH / 2;
+    // // Optional icon (question mark)
+    // const optH = 25;
+    // const startX = width - 2 * iconSpacing;
+    // const iconY = VARIANT_Constants.MARGIN_Y;
+    // const circleX = startX;
+    // const circleY = iconY;
+    // const radius = optH / 2;
 
-    const optionalGroup = iconsGroup.append('g');
+    // const optionalGroup = iconsGroup.append('g');
 
-    // background rect (rounded)
-    const optionalCircle = optionalGroup
-      .append('circle')
-      .attr('cx', circleX)
-      .attr('cy', circleY)
-      .attr('r', radius)
-      .attr('fill', '#df3806c2')
-      .attr('stroke', '#ffffff8e');
+    // // background rect (rounded)
+    // const optionalCircle = optionalGroup
+    //   .append('circle')
+    //   .attr('cx', circleX)
+    //   .attr('cy', circleY)
+    //   .attr('r', radius)
+    //   .attr('fill', '#df3806c2')
+    //   .attr('stroke', '#ffffff8e');
 
-    // small question mark icon (left inside rect)
-    optionalGroup
-      .append('text')
-      .attr('x', circleX)
-      .attr('y', circleY + 1)
-      .attr('text-anchor', 'middle') // horizontal center
-      .attr('dominant-baseline', 'middle') // vertical center
-      .attr('font-size', radius * 1.5)
-      .attr('font-weight', 'bold')
-      .attr('fill', '#fff')
-      .style('pointer-events', 'none')
-      .text('?');
+    // // small question mark icon (left inside rect)
+    // optionalGroup
+    //   .append('text')
+    //   .attr('x', circleX)
+    //   .attr('y', circleY + 1)
+    //   .attr('text-anchor', 'middle') // horizontal center
+    //   .attr('dominant-baseline', 'middle') // vertical center
+    //   .attr('font-size', radius * 1.5)
+    //   .attr('font-weight', 'bold')
+    //   .attr('fill', '#fff')
+    //   .style('pointer-events', 'none')
+    //   .text('?');
 
-    (optionalCircle as any).on('click', (event: PointerEvent) => {
-      event.stopPropagation();
-      console.log('Clicked optional');
-    });
+    // (optionalCircle as any).on('click', (event: PointerEvent) => {
+    //   event.stopPropagation();
+    //   console.log('Clicked optional');
+    // });
 
-    if (optional) {
-      optionalGroup.style('display', 'inline');
-    } else {
-      optionalGroup.style('display', 'none');
-    }
+    // if (optional) {
+    //   optionalGroup.style('display', 'inline');
+    // } else {
+    //   optionalGroup.style('display', 'none');
+    // }
 
-    // Repeatable icon (circular arrow)
-    const repeatGroup = iconsGroup.append('g');
+    // // Repeatable icon (circular arrow)
+    // const repeatGroup = iconsGroup.append('g');
 
-    // background rect (rounded)
+    // // background rect (rounded)
 
-    const repeatCircle = repeatGroup
-      .append('circle')
-      .attr('cx', circleX + iconSpacing)
-      .attr('cy', circleY)
-      .attr('r', radius)
-      .attr('fill', '#00a738c2')
-      .attr('stroke', '#ffffff8e');
+    // const repeatCircle = repeatGroup
+    //   .append('circle')
+    //   .attr('cx', circleX + iconSpacing)
+    //   .attr('cy', circleY)
+    //   .attr('r', radius)
+    //   .attr('fill', '#00a738c2')
+    //   .attr('stroke', '#ffffff8e');
 
-    // small question mark icon (left inside rect)
-    repeatGroup
-      .append('text')
-      .attr('x', circleX + iconSpacing)
-      .attr('y', circleY)
-      .attr('text-anchor', 'middle') // horizontal center
-      .attr('dominant-baseline', 'middle') // vertical center
-      .attr('font-size', radius * 0.75)
-      .attr('font-weight', 'bold')
-      .attr('fill', '#fff')
-      .style('pointer-events', 'none')
-      .text(`${repeatCount}x⟳`);
+    // // small question mark icon (left inside rect)
+    // repeatGroup
+    //   .append('text')
+    //   .attr('x', circleX + iconSpacing)
+    //   .attr('y', circleY)
+    //   .attr('text-anchor', 'middle') // horizontal center
+    //   .attr('dominant-baseline', 'middle') // vertical center
+    //   .attr('font-size', radius * 0.75)
+    //   .attr('font-weight', 'bold')
+    //   .attr('fill', '#fff')
+    //   .style('pointer-events', 'none')
+    //   .text(`${repeatCount}x⟳`);
 
-    (repeatCircle as any).on('click', (event: PointerEvent) => {
-      event.stopPropagation();
-      this.onRepeatClick(repeatCircle.node() as SVGGraphicsElement, element);
-    });
+    // (repeatCircle as any).on('click', (event: PointerEvent) => {
+    //   event.stopPropagation();
+    //   this.onRepeatClick(repeatCircle.node() as SVGGraphicsElement, element);
+    // });
 
-    if (repeatable) {
-      repeatGroup.style('display', 'inline');
-    } else {
-      repeatGroup.style('display', 'none');
-    }
-
-    // Ensure icons are on top so they receive pointer events
-    try {
-      (iconsGroup as any).raise && (iconsGroup as any).raise();
-    } catch (err) {
-      // ignore if raise isn't available on this D3 build
-    }
+    // if (repeatable) {
+    //   repeatGroup.style('display', 'inline');
+    // } else {
+    //   repeatGroup.style('display', 'none');
+    // }
 
     if (this.onMouseOverCbFc) {
       this.onMouseOverCbFc(this, element, this.variant, parent);
@@ -1704,14 +1770,6 @@ export class VariantDrawerDirective
 
     const textcolor = 'white';
 
-    // const backgroundRect = parent
-    //   .append('rect')
-    //   .attr('x', 20)
-    //   .attr('y', 0)
-    //   .attr('width', width - 40)
-    //   .attr('height', VARIANT_Constants.FONT_SIZE)
-    //   .style('fill', '#a5000080')
-
     const activityText = parent
       .append('text')
       .attr('x', width / 2)
@@ -1733,17 +1791,6 @@ export class VariantDrawerDirective
       .attr('x', width / 2)
       .attr('y', y + dy)
       .text('START');
-
-    //tspan.attr(
-    //    'height',
-    //    VARIANT_Constants.FONT_SIZE + VARIANT_Constants.MARGIN_Y
-    //);
-
-    //const maxWidth =
-    //    element.getWidth(false) -
-    //    element.getHeadLength() * 2 -
-    //    VARIANT_Constants.MARGIN_X;
-    //this.wrapInnerLabelText(tspan, "START", maxWidth);
 
     if (this.onClickCbFc) {
       parent.on('click', (e: PointerEvent) => {
@@ -1791,14 +1838,6 @@ export class VariantDrawerDirective
 
     const textcolor = 'white';
 
-    // const backgroundRect = parent
-    //   .append('rect')
-    //   .attr('x', 20)
-    //   .attr('y', 0)
-    //   .attr('width', width - 40)
-    //   .attr('height', VARIANT_Constants.FONT_SIZE)
-    //   .style('fill', '#a5000080')
-
     const activityText = parent
       .append('text')
       .attr('x', width / 2)
@@ -1820,17 +1859,6 @@ export class VariantDrawerDirective
       .attr('x', width / 2)
       .attr('y', y + dy)
       .text('END');
-
-    //tspan.attr(
-    //    'height',
-    //    VARIANT_Constants.FONT_SIZE + VARIANT_Constants.MARGIN_Y
-    //);
-
-    //const maxWidth =
-    //    element.getWidth(false) -
-    //    element.getHeadLength() * 2 -
-    //    VARIANT_Constants.MARGIN_X;
-    //this.wrapInnerLabelText(tspan, "START", maxWidth);
 
     if (this.onClickCbFc) {
       parent.on('click', (e: PointerEvent) => {

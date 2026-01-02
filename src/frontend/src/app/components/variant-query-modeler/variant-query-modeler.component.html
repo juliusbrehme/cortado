@@ -18,99 +18,12 @@
     </button>
 
     <!-- Query Type Selector -->
-    <div class="vq-context-menu__section">
+    <div>
       <select id="queryTypeSelect" class="vq-context-menu-select" [(ngModel)]="queryType" (change)="onQueryTypeChange()">
         <option class="vq-context-menu-option" value="DFS">DFS</option>
         <option class="vq-context-menu-option" value="BFS">BFS</option>
         <option class="vq-context-menu-option" value="RELAXED_NG">RELAXED_NG</option>
       </select>
-    </div>
-
-    <div class="vr mx-2"></div>
-
-    <div class="btn-group round-corners" role="group">
-      <input
-        type="radio"
-        class="btn-check"
-        (click)="handleInfixButtonClick(infixType.NOT_AN_INFIX)"
-        id="radio_variant"
-      />
-
-      <label
-        class="button"
-        for="radio_variant"
-        [ngClass]="
-          curInfixType === infixType.NOT_AN_INFIX ? 'strategy-selected' : ''
-        "
-        ngbTooltip="model as full variant"
-        triggers="hover"
-        container="body"
-      >
-        <svg height="20" width="20">
-          <use href="#variantChevron"></use>
-        </svg>
-      </label>
-
-      <input
-        type="radio"
-        class="btn-check"
-        (click)="handleInfixButtonClick(infixType.PREFIX)"
-        id="radio_prefix"
-      />
-      <label
-        class="button"
-        for="radio_prefix"
-        [ngClass]="curInfixType === infixType.PREFIX ? 'strategy-selected' : ''"
-        ngbTooltip="model as prefix"
-        triggers="hover"
-        container="body"
-      >
-        <svg height="20" width="20">
-          <use href="#prefixChevron"></use>
-        </svg>
-      </label>
-
-      <input
-        type="radio"
-        class="btn-check"
-        (click)="handleInfixButtonClick(infixType.PROPER_INFIX)"
-        id="radio_infix"
-      />
-      <label
-        class="button"
-        for="radio_infix"
-        [ngClass]="
-          curInfixType === infixType.PROPER_INFIX ? 'strategy-selected' : ''
-        "
-        ngbTooltip="model as infix"
-        triggers="hover"
-        container="body"
-      >
-        <svg height="20" width="35">
-          <use href="#infixChevron"></use>
-        </svg>
-      </label>
-
-      <input
-        type="radio"
-        class="btn-check"
-        (click)="handleInfixButtonClick(infixType.POSTFIX)"
-        id="radio_postfix"
-      />
-      <label
-        class="button"
-        for="radio_postfix"
-        [ngClass]="
-          curInfixType === infixType.POSTFIX ? 'strategy-selected' : ''
-        "
-        ngbTooltip="model as postfix"
-        triggers="hover"
-        container="body"
-      >
-        <svg height="20" width="20">
-          <use href="#postfixChevron"></use>
-        </svg>
-      </label>
     </div>
 
     <div class="vr mx-2"></div>
@@ -214,6 +127,137 @@
       </span>
     </button>
 
+    <div class="vr mx-2"></div>
+
+    <button
+        class="button"
+        (click)="onAddStartOperatorSelected()"
+        ngbTooltip="Add Start Node"
+        triggers="hover"
+        container="body"
+        [disabled]="emptyVariant || !selectedElement"
+    >
+      <i
+        class="bi bi-play"
+        [ngClass]="{
+          'text-warning': !emptyVariant
+        }"
+      >
+      </i>
+    </button>
+    <button
+      class="button"
+      (click)="onAddEndOperatorSelected()"
+      ngbTooltip="Add End Node"
+      triggers="hover"
+      container="body"
+      [disabled]="emptyVariant || !selectedElement"
+    >
+      <i
+        class="bi bi-stop"
+        [ngClass]="{
+          'text-warning': !emptyVariant
+        }"
+      >
+      </i>
+    </button>
+    <button
+      class="button"
+      (click)="onAddAnythingOperatorSelected()"
+      ngbTooltip="Add Anything Operator"
+      triggers="hover"
+      container="body"
+      [disabled]="emptyVariant || !selectedElement"
+    >
+      <i
+        class="bi bi-three-dots"
+        [ngClass]="{
+          'text-warning': !emptyVariant
+        }"
+      >
+      </i>
+    </button>
+    <button
+      class="button"
+      (click)="onAddWildcardSelected()"
+      ngbTooltip="Add Wildcard Operator"
+      triggers="hover"
+      container="body"
+      [disabled]="emptyVariant || !selectedElement"
+    >
+      <i
+        class="bi bi-plus"
+        [ngClass]="{
+          'text-warning': !emptyVariant
+        }"
+      >
+      </i>
+    </button>
+    <button
+      class="button"
+      (click)="onRepeatableSelected()"
+      ngbTooltip="Add Repeatable Operator"
+      triggers="hover"
+      container="body"
+      [disabled]="emptyVariant || !selectedElement"
+    >
+      <i
+        class="bi bi-repeat"
+        [ngClass]="{
+          'text-warning': !emptyVariant
+        }"
+      >
+      </i>
+    </button>
+    <button
+      class="button"
+      (click)="onOptionalSelected()"
+      ngbTooltip="Add Optional Operator"
+      triggers="hover"
+      container="body"
+      [disabled]="emptyVariant || !selectedElement"
+    >
+      <i
+        class="bi bi-question-circle"
+        [ngClass]="{
+          'text-warning': !emptyVariant
+        }"
+      >
+      </i>
+    </button>
+    <button
+      class="button"
+      (click)="onChoiceSelected()"
+      ngbTooltip="Add Choice Operator"
+      triggers="hover"
+      container="body"
+      [disabled]="emptyVariant || !selectedElement"
+    >
+      <i
+        class="bi bi-list"
+        [ngClass]="{
+          'text-warning': !emptyVariant
+        }"
+      >
+      </i>
+    </button>
+    <button
+      class="button"
+      (click)="onFallthroughSelected()"
+      ngbTooltip="Add Fallthrough Operator"
+      triggers="hover"
+      container="body"
+      [disabled]="emptyVariant || !selectedElement"
+    >
+      <i
+        class="bi bi-arrow-left-right"
+        [ngClass]="{
+          'text-warning': !emptyVariant
+        }"
+      >
+      </i>
+    </button>
+    
     <div class="vr mx-2"></div>
 
     <button
