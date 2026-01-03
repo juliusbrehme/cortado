@@ -109,6 +109,7 @@ import { ArcDiagramFilterComponent } from './components/variant-explorer/arc-dia
 import { VariantVisualisationComponent } from './components/variant-explorer/variant/subcomponents/variant-visualisation/variant-visualisation.component';
 import { LogExporterDialogComponent } from './components/log-exporter-dialog/log-exporter-dialog/log-exporter-dialog.component';
 import { EnumToArrayPipe } from './pipes/enum-to-array.pipe';
+import { QueryLogicTreeComponent } from './components/query-logic-tree/query-logic-tree.component';
 
 @NgModule({
   declarations: [
@@ -163,6 +164,7 @@ import { EnumToArrayPipe } from './pipes/enum-to-array.pipe';
     VariantExplorerContextMenuComponent,
     VariantQueryModelerComponent,
     VariantQueryModelerContextMenuComponent,
+    QueryLogicTreeComponent,
     ProcessTreeDrawerDirective,
     BpmnDrawerDirective,
     TreePerformanceButtonComponent,

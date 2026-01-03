@@ -47,6 +47,10 @@ import { applyInverseStrokeToPoly } from 'src/app/utils/render-utils';
 import { Observable, of, Subject } from 'rxjs';
 import { first, takeUntil, tap } from 'rxjs/operators';
 import { VariantFilterService } from 'src/app/services/variantFilterService/variant-filter.service';
+import {
+  LogicTreeNode,
+  QueryLogicTreeComponent,
+} from '../query-logic-tree/query-logic-tree.component';
 
 @Component({
   selector: 'app-variant-query-modeler',
@@ -58,6 +62,17 @@ export class VariantQueryModelerComponent
   extends LayoutChangeDirective
   implements OnInit, OnDestroy
 {
+  logicTree: LogicTreeNode = {
+    id: 'root',
+    type: 'plus',
+  };
+
+  // Map to track all variant nodes by their variantIndex
+  queryNodes: Map<number, LogicTreeNode> = new Map();
+
+  // Currently selected variant for editing with toolbar
+  currentEditingQueryId: number | null = null;
+
   // Floating operator editor state
   editorVisible: boolean = false;
   editorX: number = 0;
@@ -81,6 +96,9 @@ export class VariantQueryModelerComponent
 
   @ViewChild(VariantDrawerDirective)
   variantDrawer: VariantDrawerDirective;
+
+  @ViewChild(QueryLogicTreeComponent, { static: false })
+  queryLogicTreeComponent: QueryLogicTreeComponent;
 
   currentVariant: VariantElement = null;
 
@@ -157,6 +175,74 @@ export class VariantQueryModelerComponent
           this.variantDrawer.redraw();
         }
       });
+  }
+
+  onTreeUpdated(updatedTree: LogicTreeNode) {
+    this.logicTree = updatedTree;
+    // Update the variant nodes map whenever tree changes
+    this.queryNodes.clear();
+    this.collectQueryNodes(updatedTree);
+  }
+
+  private collectQueryNodes(node: LogicTreeNode) {
+    if (!node) return;
+
+    if (node.type === 'query' && node.queryId) {
+      this.queryNodes.set(node.queryId, node);
+    }
+
+    if (node.children) {
+      node.children.forEach((child) => this.collectQueryNodes(child));
+    }
+  }
+
+  onQueryCreated(event: { node: LogicTreeNode; variantIndex: number }) {
+    const { node, variantIndex } = event;
+    // Store the variant node
+    this.queryNodes.set(variantIndex, node);
+  }
+
+  selectVariantForEditing(queryId: number, node: LogicTreeNode) {
+    // Save current variant back to the tree node before switching
+    const previousId = this.currentEditingQueryId;
+    if (previousId !== null && this.queryNodes.has(previousId)) {
+      const previousNode = this.queryNodes.get(previousId);
+      if (previousNode) {
+        // Deep clone to ensure we capture the current state
+        previousNode.variantElement = cloneDeep(this.currentVariant);
+      }
+    }
+
+    // Load the new variant into the main editor
+    this.currentEditingQueryId = queryId;
+
+    // Check if variant has content or is empty
+    if (node.variantElement) {
+      // Deep clone when loading to avoid reference issues
+      this.currentVariant = cloneDeep(node.variantElement);
+      this.emptyVariant = false;
+    } else {
+      this.currentVariant = null;
+      this.emptyVariant = true;
+    }
+
+    // Reset the cache with the new variant
+    this.cachedVariants = [
+      this.currentVariant ? cloneDeep(this.currentVariant) : null,
+    ];
+    this.cacheIdx = 0;
+
+    // Clear selection
+    this.selectedElement = null;
+    this.multipleSelected = false;
+
+    if (this.variantDrawer) {
+      this.variantDrawer.redraw();
+    }
+
+    if (this.editor) {
+      this.editor.centerContent(0);
+    }
   }
 
   ngOnDestroy(): void {
@@ -1164,6 +1250,46 @@ export class VariantQueryModelerComponent
     this.triggerRedraw();
   }
 
+  resetAll() {
+    // Reset logic tree to initial state
+    this.logicTree = {
+      id: 'root',
+      type: 'plus',
+    };
+
+    // Clear all variant nodes
+    this.queryNodes.clear();
+
+    // Reset current editing state
+    this.currentEditingQueryId = null;
+    this.currentVariant = null;
+    this.emptyVariant = true;
+
+    // Reset cache
+    this.cachedVariants = [null];
+    this.cacheIdx = 0;
+
+    // Clear selections
+    this.selectedElement = false;
+    this.multiSelect = false;
+    this.multipleSelected = false;
+
+    // Trigger tree update
+    this.onTreeUpdated(this.logicTree);
+
+    // Trigger redraw
+    this.triggerRedraw();
+
+    // Center both editors after a short delay to allow rendering
+    if (this.queryLogicTreeComponent) {
+      this.queryLogicTreeComponent.recenterAfterUpdate();
+    }
+    // Center variant editor
+    if (this.editor) {
+      this.editor.centerContent(0);
+    }
+  }
+
   cacheCurrentVariant() {
     if (this.cacheIdx < this.cachedVariants.length - 1) {
       this.cachedVariants = this.cachedVariants.slice(0, this.cacheIdx + 1);
@@ -1385,6 +1511,46 @@ export class VariantQueryModelerComponent
         'Testing variant query filter'
       );
     });
+  }
+
+  onFilterCurrentQuery() {
+    // Filter using only the currently selected query
+    if (this.currentEditingQueryId === null || !this.currentVariant) {
+      return;
+    }
+
+    const variantQuery = this.currentVariant.serialize(1);
+    const observable = this.backendService.visualQuery(
+      variantQuery,
+      this.queryType
+    );
+    observable.subscribe((res) => {
+      this.variantFilterService.addVariantFilter(
+        `Query #${this.currentEditingQueryId} filter`,
+        new Set(res as Array<number>),
+        `Filter based on Query #${this.currentEditingQueryId}`
+      );
+    });
+  }
+
+  isFilterable(): boolean {
+    if (this.logicTree === null) {
+      return false;
+    }
+    return false;
+  }
+
+  onFilterLogicTree() {
+    // Filter using only the currently selected query
+    if (this.logicTree === null) {
+      return;
+    }
+
+    const observable = this.backendService.visualQueryLogical(
+      this.logicTree,
+      this.queryType
+    );
+    //TODO: subscribe and add filter
   }
 
   private addStatistics(newVariant: Variant): Observable<any> {
