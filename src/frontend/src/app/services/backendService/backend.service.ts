@@ -409,6 +409,15 @@ export class BackendService {
     );
   }
 
+  visualQueryLogical(query: any, type: string = 'BFS'): Observable<any> {
+    const queryBody = { pattern: query, type: type };
+    console.log('Sending logical visual query:', queryBody);
+    return this.httpClient.post(
+      ROUTES.HTTP_BASE_URL + ROUTES.VARIANT + 'queryLogicalPattern',
+      queryBody
+    );
+  }
+
   getInfo(): Observable<any> {
     return this.httpClient.get(ROUTES.HTTP_BASE_URL + 'info');
   }
