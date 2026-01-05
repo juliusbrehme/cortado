@@ -177,74 +177,6 @@ export class VariantQueryModelerComponent
       });
   }
 
-  onTreeUpdated(updatedTree: LogicTreeNode) {
-    this.logicTree = updatedTree;
-    // Update the variant nodes map whenever tree changes
-    this.queryNodes.clear();
-    this.collectQueryNodes(updatedTree);
-  }
-
-  private collectQueryNodes(node: LogicTreeNode) {
-    if (!node) return;
-
-    if (node.type === 'query' && node.queryId) {
-      this.queryNodes.set(node.queryId, node);
-    }
-
-    if (node.children) {
-      node.children.forEach((child) => this.collectQueryNodes(child));
-    }
-  }
-
-  onQueryCreated(event: { node: LogicTreeNode; variantIndex: number }) {
-    const { node, variantIndex } = event;
-    // Store the variant node
-    this.queryNodes.set(variantIndex, node);
-  }
-
-  selectVariantForEditing(queryId: number, node: LogicTreeNode) {
-    // Save current variant back to the tree node before switching
-    const previousId = this.currentEditingQueryId;
-    if (previousId !== null && this.queryNodes.has(previousId)) {
-      const previousNode = this.queryNodes.get(previousId);
-      if (previousNode) {
-        // Deep clone to ensure we capture the current state
-        previousNode.variantElement = cloneDeep(this.currentVariant);
-      }
-    }
-
-    // Load the new variant into the main editor
-    this.currentEditingQueryId = queryId;
-
-    // Check if variant has content or is empty
-    if (node.variantElement) {
-      // Deep clone when loading to avoid reference issues
-      this.currentVariant = cloneDeep(node.variantElement);
-      this.emptyVariant = false;
-    } else {
-      this.currentVariant = null;
-      this.emptyVariant = true;
-    }
-
-    // Reset the cache with the new variant
-    this.cachedVariants = [
-      this.currentVariant ? cloneDeep(this.currentVariant) : null,
-    ];
-    this.cacheIdx = 0;
-
-    // Clear selection
-    this.selectedElement = null;
-    this.multipleSelected = false;
-
-    if (this.variantDrawer) {
-      this.variantDrawer.redraw();
-    }
-
-    if (this.editor) {
-      this.editor.centerContent(0);
-    }
-  }
-
   ngOnDestroy(): void {
     this._destroy$.next();
   }
@@ -1309,6 +1241,9 @@ export class VariantQueryModelerComponent
         this.cacheIdx = this.cachedVariants.length - 1;
       }
     }
+
+    // Update the query node with the current variant state
+    this.saveCurrentVariantToNode();
   }
 
   compareNode(node1, node2) {
@@ -1533,11 +1468,66 @@ export class VariantQueryModelerComponent
     });
   }
 
+  checkForTreeCompleteness(node: LogicTreeNode): boolean {
+    if (!node) return true;
+
+    if (node.type === 'plus') {
+      return false;
+    }
+
+    if (node.children) {
+      for (const child of node.children) {
+        if (!this.checkForTreeCompleteness(child)) {
+          return false;
+        }
+      }
+    }
+
+    return true;
+  }
+
   isFilterable(): boolean {
     if (this.logicTree === null) {
       return false;
     }
-    return false;
+
+    // Ensure there is no plus node left
+    if (!this.checkForTreeCompleteness(this.logicTree)) {
+      return false;
+    }
+
+    for (const node of this.queryNodes.values()) {
+      if (node.variantElement === null || node.variantElement === undefined) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  transformLogicTreeToQuery(node: LogicTreeNode): any {
+    if (node.type === 'query') {
+      const variantElement = this.queryNodes.get(node.queryId).variantElement;
+      if (variantElement) {
+        return { type: node.type, pattern: variantElement.serialize(1) };
+      } else {
+        return null;
+      }
+    } else {
+      const childrenQueries = [];
+      for (const child of node.children) {
+        const childQuery = this.transformLogicTreeToQuery(child);
+        if (childQuery) {
+          childrenQueries.push(childQuery);
+        }
+      }
+      if (childrenQueries.length === 0) {
+        return null;
+      }
+      return {
+        type: node.type,
+        children: childrenQueries,
+      };
+    }
   }
 
   onFilterLogicTree() {
@@ -1546,11 +1536,93 @@ export class VariantQueryModelerComponent
       return;
     }
 
+    this.saveCurrentVariantToNode();
+    const query = this.transformLogicTreeToQuery(this.logicTree);
+
     const observable = this.backendService.visualQueryLogical(
-      this.logicTree,
+      query,
       this.queryType
     );
-    //TODO: subscribe and add filter
+
+    observable.subscribe((res) => {
+      this.variantFilterService.addVariantFilter(
+        `Logic Query filter`,
+        new Set(res as Array<number>),
+        `Filter based on Query Logic Tree`
+      );
+    });
+  }
+
+  onTreeUpdated(updatedTree: LogicTreeNode) {
+    this.logicTree = updatedTree;
+    // Update the variant nodes map whenever tree changes
+    this.queryNodes.clear();
+    this.collectQueryNodes(updatedTree);
+  }
+
+  private collectQueryNodes(node: LogicTreeNode) {
+    if (!node) return;
+
+    if (node.type === 'query' && node.queryId) {
+      this.queryNodes.set(node.queryId, node);
+    }
+
+    if (node.children) {
+      node.children.forEach((child) => this.collectQueryNodes(child));
+    }
+  }
+
+  onQueryCreated(event: { node: LogicTreeNode; variantIndex: number }) {
+    const { node, variantIndex } = event;
+    // Store the variant node
+    this.queryNodes.set(variantIndex, node);
+  }
+
+  saveCurrentVariantToNode() {
+    const id = this.currentEditingQueryId;
+    if (id !== null && this.queryNodes.has(id)) {
+      const node = this.queryNodes.get(id);
+      if (node) {
+        // Deep clone to ensure we capture the current state
+        node.variantElement = cloneDeep(this.currentVariant);
+      }
+    }
+  }
+
+  selectVariantForEditing(queryId: number, node: LogicTreeNode) {
+    // Save current variant back to the tree node before switching
+    this.saveCurrentVariantToNode();
+
+    // Load the new variant into the main editor
+    this.currentEditingQueryId = queryId;
+
+    // Check if variant has content or is empty
+    if (node.variantElement) {
+      // Deep clone when loading to avoid reference issues
+      this.currentVariant = cloneDeep(node.variantElement);
+      this.emptyVariant = false;
+    } else {
+      this.currentVariant = null;
+      this.emptyVariant = true;
+    }
+
+    // Reset the cache with the new variant
+    this.cachedVariants = [
+      this.currentVariant ? cloneDeep(this.currentVariant) : null,
+    ];
+    this.cacheIdx = 0;
+
+    // Clear selection
+    this.selectedElement = null;
+    this.multipleSelected = false;
+
+    if (this.variantDrawer) {
+      this.variantDrawer.redraw();
+    }
+
+    if (this.editor) {
+      this.editor.centerContent(0);
+    }
   }
 
   private addStatistics(newVariant: Variant): Observable<any> {

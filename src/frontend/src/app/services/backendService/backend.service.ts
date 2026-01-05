@@ -404,16 +404,16 @@ export class BackendService {
   visualQuery(query: any, type: string = 'BFS'): Observable<any> {
     const queryBody = { pattern: query, type: type };
     return this.httpClient.post(
-      ROUTES.HTTP_BASE_URL + ROUTES.VARIANT + 'queryPattern',
+      ROUTES.HTTP_BASE_URL + ROUTES.QUERY + 'queryPattern',
       queryBody
     );
   }
 
+  // Querying for logical patterns (with AND, OR)
   visualQueryLogical(query: any, type: string = 'BFS'): Observable<any> {
     const queryBody = { pattern: query, type: type };
-    console.log('Sending logical visual query:', queryBody);
     return this.httpClient.post(
-      ROUTES.HTTP_BASE_URL + ROUTES.VARIANT + 'queryLogicalPattern',
+      ROUTES.HTTP_BASE_URL + ROUTES.QUERY + 'queryLogicalPattern',
       queryBody
     );
   }
