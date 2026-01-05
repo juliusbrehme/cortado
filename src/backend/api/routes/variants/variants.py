@@ -174,5 +174,3 @@ def getCaseActivities(query: caseQuery):
         "keys": key_set,
     }
     return res
-
-

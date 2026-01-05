@@ -1,5 +1,8 @@
 import cache.cache as cache
-from endpoints.query_variant import evaluate_logical_query, evaluate_query_against_variant_graphs
+from endpoints.query_variant import (
+    evaluate_logical_query,
+    evaluate_query_against_variant_graphs,
+)
 from fastapi import APIRouter
 from pydantic import BaseModel
 from cortado_core.visual_query_language.query import create_query_instance, QueryType
@@ -13,6 +16,7 @@ router = APIRouter(tags=["variantQuery"], prefix="/variantQuery")
 
 class variantQuery(BaseModel):
     queryString: str
+
 
 class visualQuery(BaseModel):
     pattern: Any = None
@@ -30,6 +34,7 @@ def variant_query(query: variantQuery):
 
     return res
 
+
 @router.post("/queryPattern")
 def query_pattern(query: visualQuery):
     pattern = Group.deserialize(query.pattern)
@@ -37,6 +42,7 @@ def query_pattern(query: visualQuery):
     query = create_query_instance(pattern, query_type=query_type)
     result = evaluate_visual_query_against_variant_graphs(query, cache.variants)
     return result
+
 
 @router.post("/queryLogicalPattern")
 def query_logical_pattern(query: visualQuery):

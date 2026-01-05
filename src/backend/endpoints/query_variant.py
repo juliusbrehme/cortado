@@ -51,21 +51,16 @@ def evaluate_logical_query(
             evaluate_logical_query(child, query_type, variants)
             for child in logical_query.get("children", [])
         ]
-        return list(
-            set.intersection(*(set(r) for r in results)) if results else set()
-        )
+        return list(set.intersection(*(set(r) for r in results)) if results else set())
     elif node_type == "or":
         results = [
             evaluate_logical_query(child, query_type, variants)
             for child in logical_query.get("children", [])
         ]
-        return list(
-            set.union(*(set(r) for r in results)) if results else set()
-        )
+        return list(set.union(*(set(r) for r in results)) if results else set())
     else:
         return []
 
-    
 
 def evaluate_visual_query_against_variant_graphs(
     query: PatternQuery,
