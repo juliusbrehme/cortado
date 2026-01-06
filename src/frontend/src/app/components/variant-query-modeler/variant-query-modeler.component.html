@@ -56,7 +56,7 @@
         <button
           ngbDropdownItem
           class="dropdown-item"
-          (click)="queryType = 'DFS'; onQueryTypeChange()"
+          (click)="queryType = 'DFS'"
           [ngClass]="queryType === 'DFS' ? 'strategy-selected' : ''"
           [disabled]="currentEditingQueryId === null"
           ngbTooltip="DFS Algorithm"
@@ -69,7 +69,7 @@
         <button
           ngbDropdownItem
           class="dropdown-item"
-          (click)="queryType = 'BFS'; onQueryTypeChange()"
+          (click)="queryType = 'BFS'"
           [ngClass]="queryType === 'BFS' ? 'strategy-selected' : ''"
           [disabled]="currentEditingQueryId === null"
           ngbTooltip="BFS Algorithm"
@@ -81,7 +81,7 @@
         <button
           ngbDropdownItem
           class="dropdown-item"
-          (click)="queryType = 'RELAXED_NG'; onQueryTypeChange()"
+          (click)="queryType = 'RELAXED_NG'"
           [ngClass]="queryType === 'RELAXED_NG' ? 'strategy-selected' : ''"
           [disabled]="currentEditingQueryId === null"
           ngbTooltip="RELAXED_NG Algorithm"
@@ -426,7 +426,6 @@
   </div>
   <app-activity-button-area
     [activityNames]="activityNames"
-    [customActivities]="customActivities"
     (activityButtonClick)="handleActivityButtonClick($event)"
     [ngClass]="
       currentEditingQueryId === null ||

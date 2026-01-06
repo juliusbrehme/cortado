@@ -82,8 +82,6 @@ export class VariantQueryModelerComponent
 
   activityNames: Array<String> = [];
 
-  customActivities: boolean = true;
-
   public colorMap: Map<string, string>;
 
   VariantQueryModelerComponent = VariantQueryModelerComponent;
@@ -1402,10 +1400,6 @@ export class VariantQueryModelerComponent
     this.editor.centerContent(250);
   }
 
-  onQueryTypeChange() {
-    // selection change handled by two-way binding on `queryType`
-  }
-
   computeFocusOffset = (svg) => {
     const path = findPathToSelectedNode(
       this.currentVariant,
@@ -1555,27 +1549,12 @@ export class VariantQueryModelerComponent
 
   onTreeUpdated(updatedTree: LogicTreeNode) {
     this.logicTree = updatedTree;
-    // Update the variant nodes map whenever tree changes
-    this.queryNodes.clear();
-    this.collectQueryNodes(updatedTree);
   }
 
-  private collectQueryNodes(node: LogicTreeNode) {
-    if (!node) return;
-
-    if (node.type === 'query' && node.queryId) {
-      this.queryNodes.set(node.queryId, node);
-    }
-
-    if (node.children) {
-      node.children.forEach((child) => this.collectQueryNodes(child));
-    }
-  }
-
-  onQueryCreated(event: { node: LogicTreeNode; variantIndex: number }) {
-    const { node, variantIndex } = event;
+  onQueryCreated(event: { node: LogicTreeNode; queryId: number }) {
+    const { node, queryId } = event;
     // Store the variant node
-    this.queryNodes.set(variantIndex, node);
+    this.queryNodes.set(queryId, node);
   }
 
   saveCurrentVariantToNode() {
@@ -1590,9 +1569,7 @@ export class VariantQueryModelerComponent
   }
 
   selectVariantForEditing(queryId: number, node: LogicTreeNode) {
-    // Save current variant back to the tree node before switching
     this.saveCurrentVariantToNode();
-
     // Load the new variant into the main editor
     this.currentEditingQueryId = queryId;
 

@@ -126,3 +126,13 @@
 .query-item {
   border-left: 6px solid #4caf50;
 }
+
+.preview-container {
+  opacity: 1;
+  pointer-events: none;
+}
+
+.query-preview {
+  pointer-events: none;
+  overflow: visible;
+}

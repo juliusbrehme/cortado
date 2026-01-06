@@ -6,8 +6,6 @@ import {
   OnInit,
   ViewChild,
   ElementRef,
-  SimpleChanges,
-  OnChanges,
   HostBinding,
 } from '@angular/core';
 import {
@@ -15,6 +13,10 @@ import {
   WildcardNode,
 } from 'src/app/objects/Variants/variant_element';
 import { ZoomFieldComponent } from '../zoom-field/zoom-field.component';
+import { ColorMapService } from '../../services/colorMapService/color-map.service';
+import { VariantDrawerDirective } from 'src/app/directives/variant-drawer/variant-drawer.directive';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 
 export type TreeNodeType = 'plus' | 'and' | 'or' | 'query';
 
@@ -33,7 +35,7 @@ export interface LogicTreeNode {
   templateUrl: './query-logic-tree.component.html',
   styleUrls: ['./query-logic-tree.component.css'],
 })
-export class QueryLogicTreeComponent implements OnInit {
+export class QueryLogicTreeComponent implements OnInit, OnDestroy {
   @HostBinding('style.display') display = 'contents';
 
   @Input() rootNode: LogicTreeNode;
@@ -59,11 +61,16 @@ export class QueryLogicTreeComponent implements OnInit {
   menuY = 0;
   selectedNodeId: string | null = null;
 
+  public colorMap: Map<string, string> = new Map();
+  private destroy$ = new Subject<void>();
+
   private nodeIdCounter = 0;
   private horizontalSpacing = 200;
   private verticalSpacing = 80;
   private initialX = 0;
   private initialY = 0;
+
+  constructor(private colorMapService: ColorMapService) {}
 
   ngOnInit() {
     if (!this.rootNode) {
@@ -71,9 +78,21 @@ export class QueryLogicTreeComponent implements OnInit {
     }
     this.calculateLayout(this.rootNode, this.initialX, this.initialY);
 
+    // Subscribe to color map updates
+    this.colorMapService.colorMap$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((colorMap) => {
+        this.colorMap = colorMap;
+      });
+
     setTimeout(() => {
       this.centerTree(0);
     }, 100);
+  }
+
+  ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   private createPlusNode(): LogicTreeNode {
@@ -208,4 +227,32 @@ export class QueryLogicTreeComponent implements OnInit {
     this.calculateLayout(this.rootNode, this.initialX, this.initialY);
     this.centerTree(0);
   }
+
+  getPreviewTransform(node: LogicTreeNode): string {
+    if (!node.variantElement) return '';
+
+    const scale = 0.5;
+
+    // Get the dimensions of the variant element
+    const width = node.variantElement.getWidth?.(false) || 0;
+    const height = node.variantElement.getHeight?.() || 0;
+    const x = node.x + 40;
+    const y = node.y - (height * scale) / 2;
+
+    return `translate(${x}, ${y}) scale(${scale})`;
+  }
+
+  computeActivityColor = (
+    self: VariantDrawerDirective,
+    element: VariantElement
+  ) => {
+    let color;
+    color = this.colorMap.get(element.asLeafNode().activity[0]);
+
+    if (!color) {
+      color = '#d3d3d3'; // lightgrey
+    }
+
+    return color;
+  };
 }

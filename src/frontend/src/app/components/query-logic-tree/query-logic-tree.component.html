@@ -24,8 +24,24 @@
         </g>
 
         <!-- Draw the node itself -->
-<g class="node-group" (click)="onNodeClick(node, $event)">
-        <!-- Node circle -->
+        <g class="node-group" (click)="onNodeClick(node, $event)">
+        <g *ngIf="node.type === 'query' && node.variantElement" 
+           class="preview-container">
+          <g [attr.transform]="getPreviewTransform(node)">
+            <svg 
+                class="query-preview"
+                appVariantDrawer
+                [variant]="{ variant: node.variantElement }"
+                [computeActivityColor]="computeActivityColor"
+                [traceInfixSelectionMode]="false"
+                [keepStandardView]="true"
+                [addCursorPointer]="false"
+                pointer-events="none">
+            </svg>
+          </g>
+        </g>
+        
+        <!-- Node circle (rendered second, so it's on top) -->
         <circle
           [attr.cx]="node.x"
           [attr.cy]="node.y"

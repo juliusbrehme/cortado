@@ -39,9 +39,6 @@ export class ActivityButtonAreaComponent
   activityNames: Array<string> = [];
 
   @Input()
-  customActivities: boolean = false;
-
-  @Input()
   referenceVariant: VariantElement = null;
 
   @Input()
@@ -74,13 +71,6 @@ export class ActivityButtonAreaComponent
       this.activityDummyVariants.set(activity, leaf);
     }
 
-    if (this.customActivities) {
-      console.log('Adding wildcard activity button');
-      const leaf = new WildcardNode();
-      leaf.setExpanded(true);
-      this.activityDummyVariants.set('?Wildcard?', leaf);
-    }
-
     this.colorMapService.colorMap$
       .pipe(takeUntil(this._destroy$))
       .subscribe((map) => {
@@ -102,12 +92,6 @@ export class ActivityButtonAreaComponent
       const leaf = new LeafNode([activity]);
       leaf.setExpanded(true);
       this.activityDummyVariants.set(activity, leaf);
-    }
-
-    if (this.customActivities) {
-      const leaf = new WildcardNode();
-      leaf.setExpanded(true);
-      this.activityDummyVariants.set('?Wildcard?', leaf);
     }
 
     if (this.activityButtons) {
