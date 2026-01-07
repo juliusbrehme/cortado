@@ -7,6 +7,7 @@ import {
   ViewChild,
   ElementRef,
   HostBinding,
+  OnDestroy,
 } from '@angular/core';
 import {
   VariantElement,
