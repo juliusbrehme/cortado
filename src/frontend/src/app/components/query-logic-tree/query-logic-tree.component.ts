@@ -42,6 +42,7 @@ export class QueryLogicTreeComponent implements OnInit, OnDestroy {
   @Input() rootNode: LogicTreeNode;
   @Input() currentEditingQueryId: number | null = null;
   @Input() queryNodes: Map<number, LogicTreeNode> = new Map();
+  @Input() showPreviews: boolean = true;
 
   @Output() nodeUpdated = new EventEmitter<LogicTreeNode>();
   @Output() queryCreated = new EventEmitter<{

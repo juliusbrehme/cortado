@@ -126,7 +126,10 @@ export class VariantQueryModelerComponent
   redundancyWarning = false;
 
   // Query type selection for visual pattern matching
-  public queryType: 'DFS' | 'BFS' | 'RELAXED_NG' = 'BFS';
+  public queryType: 'BFS' | 'DFS' | 'RELAXED_NG' | 'VM' | 'VM_LAZY' = 'BFS';
+
+  // Preview mode for logic tree
+  public previewMode: boolean = false;
 
   private _destroy$ = new Subject();
 
@@ -1478,6 +1481,10 @@ export class VariantQueryModelerComponent
     }
 
     return true;
+  }
+
+  togglePreview() {
+    this.previewMode = !this.previewMode;
   }
 
   isFilterable(): boolean {

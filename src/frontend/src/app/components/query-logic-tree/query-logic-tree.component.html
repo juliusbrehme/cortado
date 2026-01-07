@@ -25,7 +25,7 @@
 
         <!-- Draw the node itself -->
         <g class="node-group" (click)="onNodeClick(node, $event)">
-        <g *ngIf="node.type === 'query' && node.variantElement" 
+        <g *ngIf="showPreviews && node.type === 'query' && node.variantElement" 
            class="preview-container">
           <g [attr.transform]="getPreviewTransform(node)">
             <svg 

@@ -419,17 +419,10 @@ export class VariantDrawerDirective
         .classed('in-variant-modeler') ||
       d3.select(this.svgHtmlElement.nativeElement).classed('pattern-variant');
 
-    if (
-      (inEditor ||
-        (!this.keepStandardView &&
-          this.variantViewModeService.viewMode === ViewMode.PERFORMANCE)) &&
-      !(element.parent instanceof SkipGroup)
-    ) {
-      xOffset +=
-        element.getHeadLength() +
-        element.getMarginX() -
-        element.elements[0].getHeadLength();
-    }
+    xOffset +=
+      element.getHeadLength() +
+      element.getMarginX() -
+      element.elements[0].getHeadLength();
 
     if (repeatable) {
       xOffset += VARIANT_Constants.MARGIN_X;

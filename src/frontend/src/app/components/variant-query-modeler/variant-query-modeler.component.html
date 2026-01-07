@@ -90,9 +90,55 @@
         >
           RELAXED_NG
         </button>
+        <button
+          ngbDropdownItem
+          class="dropdown-item"
+          (click)="queryType = 'VM'"
+          [ngClass]="queryType === 'VM' ? 'strategy-selected' : ''"
+          [disabled]="currentEditingQueryId === null"
+          ngbTooltip="VM Algorithm"
+          triggers="hover"
+          container="body"
+        >
+          VM
+        </button>
+        <button
+          ngbDropdownItem
+          class="dropdown-item"
+          (click)="queryType = 'VM_LAZY'"
+          [ngClass]="queryType === 'VM_LAZY' ? 'strategy-selected' : ''"
+          [disabled]="currentEditingQueryId === null"
+          ngbTooltip="VM_LAZY Algorithm"
+          triggers="hover"
+          container="body"
+        >
+          VM_LAZY
+        </button>
       </div>
     </div>
 
+    <div class="vr mx-2"></div>
+
+    <div class="btn-group">
+      <!-- Toggle Preview -->
+      <button
+        class="button"
+        (click)="togglePreview()"
+        [disabled]="currentEditingQueryId === null"
+        ngbTooltip="Toggle Preview Mode"
+        triggers="hover"
+        container="body"
+      >
+        <i class="bi bi-eye" [ngClass]="{
+          'text-warning': previewMode
+        }"></i>
+        <div @collapseText class="button-text px-1" [ngClass]="{
+          'text-warning': previewMode
+        }" *ngIf="!collapse">
+          Preview
+        </div>
+      </button>
+    </div>
 
     <div class="vr mx-2"></div>
 
@@ -459,6 +505,7 @@
         [rootNode]="logicTree"
         [currentEditingQueryId]="currentEditingQueryId"
         [queryNodes]="queryNodes"
+        [showPreviews]="previewMode"
         (nodeUpdated)="onTreeUpdated($event)"
         (queryCreated)="onQueryCreated($event)"
         (querySelected)="selectVariantForEditing($event.queryId, $event.node)">
