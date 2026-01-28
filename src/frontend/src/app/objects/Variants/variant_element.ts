@@ -62,8 +62,8 @@ export abstract class VariantElement {
       (this instanceof ParallelGroup &&
         variantElement instanceof ParallelGroup) ||
       (this instanceof LoopGroup && variantElement instanceof LoopGroup) ||
-      (this instanceof OperatorGroup &&
-        variantElement instanceof OperatorGroup) ||
+      (this instanceof RepeatGroup && variantElement instanceof RepeatGroup) ||
+      (this instanceof OptionalGroup && variantElement instanceof OptionalGroup) ||
       (this instanceof SkipGroup && variantElement instanceof SkipGroup) ||
       (this instanceof LeafNode && variantElement instanceof LeafNode) ||
       (this instanceof WaitingTimeNode &&
@@ -98,9 +98,14 @@ export abstract class VariantElement {
     return self as ParallelGroup;
   }
 
-  public asOperatorGroup(): OperatorGroup {
+  public asRepeatGroup(): RepeatGroup {
     const self: unknown = this;
-    return self as OperatorGroup;
+    return self as RepeatGroup;
+  }
+
+  public asOptionalGroup(): OptionalGroup {
+    const self: unknown = this;
+    return self as OptionalGroup;
   }
 
   public asChoiceGroup(): ChoiceGroup {
@@ -506,34 +511,26 @@ export class SequenceGroup extends VariantElement {
   }
 }
 
-export class OperatorGroup extends VariantElement {
-  public isRepeatable: boolean = false;
-  public isOptional: boolean = false;
-  public repeatCount: number = 1;
+export class RepeatGroup extends VariantElement {
+  public repeatCountMin: number = 1;
+  public repeatCountMax: number = 200;
 
-  public setRepeatCount(count: number) {
-    this.repeatCount = count;
+  public setRepeatCountMin(count: number) {
+    this.repeatCountMin = count;
   }
 
-  public getRepeatCount(): number {
-    return this.repeatCount;
+  public getRepeatCountMin(): number {
+    return this.repeatCountMin;
   }
 
-  public toggleRepeatable() {
-    this.isRepeatable = !this.isRepeatable;
+  public setRepeatCountMax(count: number) {
+    this.repeatCountMax = count;
   }
 
-  public toggleOptional() {
-    this.isOptional = !this.isOptional;
+  public getRepeatCountMax(): number {
+    return this.repeatCountMax;
   }
 
-  public getRepeatable(): boolean {
-    return this.isRepeatable;
-  }
-
-  public getOptional(): boolean {
-    return this.isOptional;
-  }
 
   public getActivities(): Set<string> {
     const res: Set<string> = new Set<string>();
@@ -594,7 +591,7 @@ export class OperatorGroup extends VariantElement {
 
   public asString(): string {
     return (
-      'Op(' +
+      'Re(' +
       this.elements
         .filter((v) => {
           return !(v instanceof WaitingTimeNode);
@@ -637,12 +634,11 @@ export class OperatorGroup extends VariantElement {
     return this.recalculateWidth(includeWaiting);
   }
 
-  public copy(): OperatorGroup {
-    const res = new OperatorGroup(this.elements.map((e) => e.copy()));
+  public copy(): RepeatGroup {
+    const res = new RepeatGroup(this.elements.map((e) => e.copy()));
     res.expanded = this.expanded;
-    res.isOptional = this.isOptional;
-    res.isRepeatable = this.isRepeatable;
-    res.repeatCount = this.repeatCount;
+    res.repeatCountMin = this.repeatCountMin;
+    res.repeatCountMax = this.repeatCountMax;
     return res;
   }
 
@@ -660,16 +656,10 @@ export class OperatorGroup extends VariantElement {
     if (!(this.parent instanceof SkipGroup))
       this.height += this.getMarginY() * 2;
 
-    if (this.isRepeatable) {
-      this.height +=
+    this.height +=
         2 * VARIANT_Constants.MARGIN_Y +
         2 * VARIANT_Constants.FONT_SIZE_OPERATOR;
-    }
-    if (this.isOptional) {
-      this.height +=
-        2 * VARIANT_Constants.MARGIN_Y +
-        2 * VARIANT_Constants.FONT_SIZE_OPERATOR;
-    }
+    
     return this.height;
   }
 
@@ -684,12 +674,9 @@ export class OperatorGroup extends VariantElement {
         2 * this.getMarginX() +
         this.getHeadLength() -
         this.elements[0].getHeadLength();
-    if (this.isRepeatable) {
-      this.width += 2 * VARIANT_Constants.MARGIN_X;
-    }
-    if (this.isOptional) {
-      this.width += 2 * VARIANT_Constants.MARGIN_X;
-    }
+    
+    this.width += 2 * VARIANT_Constants.MARGIN_X;
+    
     return this.width;
   }
 
@@ -700,20 +687,7 @@ export class OperatorGroup extends VariantElement {
       .map((e) => e.serialize(l))
       .flat()
       .filter((e) => e !== null);
-    if (this.isOptional && !this.isRepeatable) {
-      parent = { optional: elements };
-    } else if (this.isRepeatable && this.isOptional) {
-      parent = {
-        optional: [
-          {
-            loop: elements,
-            repeat_count: this.repeatCount,
-          },
-        ],
-      };
-    } else if (this.isRepeatable && !this.isOptional) {
-      parent = { loop: elements, repeat_count: this.repeatCount };
-    }
+    parent = { loop: elements, repeat_count_min: this.repeatCountMin, repeat_count_max: this.repeatCountMax };
     return parent;
   }
 
@@ -736,6 +710,413 @@ export class OperatorGroup extends VariantElement {
     this.elements.forEach((el) => el.updateConformance(confValue));
   }
 }
+
+export class OptionalGroup extends VariantElement {
+
+  public getActivities(): Set<string> {
+    const res: Set<string> = new Set<string>();
+
+    this.elements.forEach((e) => e.getActivities().forEach((a) => res.add(a)));
+
+    return res;
+  }
+
+  public renameActivity(activityName: string, newActivityName: string) {
+    this.elements.forEach((e) => {
+      e.renameActivity(activityName, newActivityName);
+    });
+  }
+
+  public deleteActivity(activityName: string): [VariantElement[], boolean] {
+    let newElems = [];
+
+    for (const elem of this.elements) {
+      if (!(elem instanceof WaitingTimeNode)) {
+        const [variantElements, isFallthrough] =
+          elem.deleteActivity(activityName);
+
+        if (isFallthrough) {
+          // Found a Fallthrough Stop Early
+          return [[], true];
+        } else {
+          // We append the result
+          if (variantElements) {
+            newElems = newElems.concat(variantElements);
+            variantElements.forEach((e) => (e.parent = this));
+          }
+        }
+      }
+    }
+
+    if (newElems.length > 1) {
+      this.elements = newElems;
+      return [[this], false];
+    } else if (newElems.length === 1) {
+      if (newElems[0] instanceof SequenceGroup) {
+        return [newElems[0].elements, false];
+      } else {
+        return [newElems, false];
+      }
+    } else {
+      return [null, false];
+    }
+  }
+
+  constructor(
+    public elements: VariantElement[],
+    performance: any = undefined,
+    public id: number = undefined
+  ) {
+    super(performance);
+  }
+
+  public asString(): string {
+    return (
+      'Opt(' +
+      this.elements
+        .filter((v) => {
+          return !(v instanceof WaitingTimeNode);
+        })
+        .map((v) => {
+          return v.asString();
+        })
+        .join(', ') +
+      ')'
+    );
+  }
+
+  public setExpanded(expanded: boolean) {
+    super.setExpanded(expanded);
+
+    for (const el of this.elements) {
+      el.setExpanded(expanded);
+    }
+  }
+
+  public setElements(elements: VariantElement[]) {
+    this.elements = elements;
+  }
+
+  public getElements() {
+    return this.elements;
+  }
+
+  public getHeight(): number {
+    if (this.height) {
+      return this.height;
+    }
+    return this.recalculateHeight();
+  }
+
+  public getWidth(includeWaiting = false): number {
+    if (this.width) {
+      return this.width;
+    }
+    return this.recalculateWidth(includeWaiting);
+  }
+
+  public copy(): OptionalGroup {
+    const res = new OptionalGroup(this.elements.map((e) => e.copy()));
+    res.expanded = this.expanded;
+    return res;
+  }
+
+  public updateWidth(includeWaiting) {
+    for (const el of this.elements) {
+      el.updateWidth(includeWaiting);
+    }
+  }
+
+  public recalculateHeight(): number {
+    this.elements.forEach((el) => (el.height = undefined));
+    this.height = Math.max(
+      ...this.elements.map((el: VariantElement) => el.getHeight())
+    );
+    if (!(this.parent instanceof SkipGroup))
+      this.height += this.getMarginY() * 2;
+
+    this.height +=
+        2 * VARIANT_Constants.MARGIN_Y +
+        2 * VARIANT_Constants.FONT_SIZE_OPERATOR;
+    return this.height;
+  }
+
+  public recalculateWidth(includeWaiting = false): number {
+    this.elements.forEach((el) => (el.width = undefined));
+    this.width = this.elements
+      .filter((el) => !(el instanceof WaitingTimeNode) || includeWaiting)
+      .map((el: VariantElement) => el.getWidth(includeWaiting))
+      .reduce((a: number, b: number) => a + b);
+    if (!(this.parent instanceof SkipGroup))
+      this.width +=
+        2 * this.getMarginX() +
+        this.getHeadLength() -
+        this.elements[0].getHeadLength();
+    this.width += 2 * VARIANT_Constants.MARGIN_X;
+    return this.width;
+  }
+
+  // Optional Group will be on top of Repeatable Group if both are selected
+  public serialize(l = 1) {
+    let parent = null;
+    const elements = this.elements
+      .map((e) => e.serialize(l))
+      .flat()
+      .filter((e) => e !== null);
+    parent = { optional: elements };
+    return parent;
+  }
+
+  public updateSelectionAttributes(): void {
+    updateSelectionAttributesForGroup(this);
+  }
+
+  public updateSurroundingSelectableElements(): void {
+    const children = this.elements.filter((c) => isElementWithActivity(c));
+    children.forEach((c) => {
+      if (!c.selected) {
+        c.setInfixSelectableState(SelectableState.Selectable, false);
+      } else {
+        c.setInfixSelectableState(SelectableState.Unselectable, false);
+      }
+    });
+  }
+
+  public updateConformance(confValue: number): void {
+    this.elements.forEach((el) => el.updateConformance(confValue));
+  }
+}
+
+// export class OperatorGroup extends VariantElement {
+//   public isRepeatable: boolean = false;
+//   public isOptional: boolean = false;
+//   public repeatCount: number = 1;
+
+//   public setRepeatCount(count: number) {
+//     this.repeatCount = count;
+//   }
+
+//   public getRepeatCount(): number {
+//     return this.repeatCount;
+//   }
+
+//   public toggleRepeatable() {
+//     this.isRepeatable = !this.isRepeatable;
+//   }
+
+//   public toggleOptional() {
+//     this.isOptional = !this.isOptional;
+//   }
+
+//   public getRepeatable(): boolean {
+//     return this.isRepeatable;
+//   }
+
+//   public getOptional(): boolean {
+//     return this.isOptional;
+//   }
+
+//   public getActivities(): Set<string> {
+//     const res: Set<string> = new Set<string>();
+
+//     this.elements.forEach((e) => e.getActivities().forEach((a) => res.add(a)));
+
+//     return res;
+//   }
+
+//   public renameActivity(activityName: string, newActivityName: string) {
+//     this.elements.forEach((e) => {
+//       e.renameActivity(activityName, newActivityName);
+//     });
+//   }
+
+//   public deleteActivity(activityName: string): [VariantElement[], boolean] {
+//     let newElems = [];
+
+//     for (const elem of this.elements) {
+//       if (!(elem instanceof WaitingTimeNode)) {
+//         const [variantElements, isFallthrough] =
+//           elem.deleteActivity(activityName);
+
+//         if (isFallthrough) {
+//           // Found a Fallthrough Stop Early
+//           return [[], true];
+//         } else {
+//           // We append the result
+//           if (variantElements) {
+//             newElems = newElems.concat(variantElements);
+//             variantElements.forEach((e) => (e.parent = this));
+//           }
+//         }
+//       }
+//     }
+
+//     if (newElems.length > 1) {
+//       this.elements = newElems;
+//       return [[this], false];
+//     } else if (newElems.length === 1) {
+//       if (newElems[0] instanceof SequenceGroup) {
+//         return [newElems[0].elements, false];
+//       } else {
+//         return [newElems, false];
+//       }
+//     } else {
+//       return [null, false];
+//     }
+//   }
+
+//   constructor(
+//     public elements: VariantElement[],
+//     performance: any = undefined,
+//     public id: number = undefined
+//   ) {
+//     super(performance);
+//   }
+
+//   public asString(): string {
+//     return (
+//       'Op(' +
+//       this.elements
+//         .filter((v) => {
+//           return !(v instanceof WaitingTimeNode);
+//         })
+//         .map((v) => {
+//           return v.asString();
+//         })
+//         .join(', ') +
+//       ')'
+//     );
+//   }
+
+//   public setExpanded(expanded: boolean) {
+//     super.setExpanded(expanded);
+
+//     for (const el of this.elements) {
+//       el.setExpanded(expanded);
+//     }
+//   }
+
+//   public setElements(elements: VariantElement[]) {
+//     this.elements = elements;
+//   }
+
+//   public getElements() {
+//     return this.elements;
+//   }
+
+//   public getHeight(): number {
+//     if (this.height) {
+//       return this.height;
+//     }
+//     return this.recalculateHeight();
+//   }
+
+//   public getWidth(includeWaiting = false): number {
+//     if (this.width) {
+//       return this.width;
+//     }
+//     return this.recalculateWidth(includeWaiting);
+//   }
+
+//   public copy(): OperatorGroup {
+//     const res = new OperatorGroup(this.elements.map((e) => e.copy()));
+//     res.expanded = this.expanded;
+//     res.isOptional = this.isOptional;
+//     res.isRepeatable = this.isRepeatable;
+//     res.repeatCount = this.repeatCount;
+//     return res;
+//   }
+
+//   public updateWidth(includeWaiting) {
+//     for (const el of this.elements) {
+//       el.updateWidth(includeWaiting);
+//     }
+//   }
+
+//   public recalculateHeight(): number {
+//     this.elements.forEach((el) => (el.height = undefined));
+//     this.height = Math.max(
+//       ...this.elements.map((el: VariantElement) => el.getHeight())
+//     );
+//     if (!(this.parent instanceof SkipGroup))
+//       this.height += this.getMarginY() * 2;
+
+//     if (this.isRepeatable) {
+//       this.height +=
+//         2 * VARIANT_Constants.MARGIN_Y +
+//         2 * VARIANT_Constants.FONT_SIZE_OPERATOR;
+//     }
+//     if (this.isOptional) {
+//       this.height +=
+//         2 * VARIANT_Constants.MARGIN_Y +
+//         2 * VARIANT_Constants.FONT_SIZE_OPERATOR;
+//     }
+//     return this.height;
+//   }
+
+//   public recalculateWidth(includeWaiting = false): number {
+//     this.elements.forEach((el) => (el.width = undefined));
+//     this.width = this.elements
+//       .filter((el) => !(el instanceof WaitingTimeNode) || includeWaiting)
+//       .map((el: VariantElement) => el.getWidth(includeWaiting))
+//       .reduce((a: number, b: number) => a + b);
+//     if (!(this.parent instanceof SkipGroup))
+//       this.width +=
+//         2 * this.getMarginX() +
+//         this.getHeadLength() -
+//         this.elements[0].getHeadLength();
+//     if (this.isRepeatable) {
+//       this.width += 2 * VARIANT_Constants.MARGIN_X;
+//     }
+//     if (this.isOptional) {
+//       this.width += 2 * VARIANT_Constants.MARGIN_X;
+//     }
+//     return this.width;
+//   }
+
+//   // Optional Group will be on top of Repeatable Group if both are selected
+//   public serialize(l = 1) {
+//     let parent = null;
+//     const elements = this.elements
+//       .map((e) => e.serialize(l))
+//       .flat()
+//       .filter((e) => e !== null);
+//     if (this.isOptional && !this.isRepeatable) {
+//       parent = { optional: elements };
+//     } else if (this.isRepeatable && this.isOptional) {
+//       parent = {
+//         optional: [
+//           {
+//             loop: elements,
+//             repeat_count: this.repeatCount,
+//           },
+//         ],
+//       };
+//     } else if (this.isRepeatable && !this.isOptional) {
+//       parent = { loop: elements, repeat_count: this.repeatCount };
+//     }
+//     return parent;
+//   }
+
+//   public updateSelectionAttributes(): void {
+//     updateSelectionAttributesForGroup(this);
+//   }
+
+//   public updateSurroundingSelectableElements(): void {
+//     const children = this.elements.filter((c) => isElementWithActivity(c));
+//     children.forEach((c) => {
+//       if (!c.selected) {
+//         c.setInfixSelectableState(SelectableState.Selectable, false);
+//       } else {
+//         c.setInfixSelectableState(SelectableState.Unselectable, false);
+//       }
+//     });
+//   }
+
+//   public updateConformance(confValue: number): void {
+//     this.elements.forEach((el) => el.updateConformance(confValue));
+//   }
+// }
 
 export class ParallelGroup extends VariantElement {
   public getActivities(): Set<string> {
@@ -1985,7 +2366,7 @@ export class WildcardNode extends VariantElement {
     public id: number = undefined
   ) {
     super(performance);
-    this.activity = ['Wildcard'];
+    this.activity = ['WILDCARD'];
   }
 
   public textLength = 10;
@@ -2048,7 +2429,6 @@ export class WildcardNode extends VariantElement {
       this.width * 0.75 + this.getHeadLength() * 2,
       this.width - this.getHeadLength() * 2
     );
-
     return this.width;
   }
 

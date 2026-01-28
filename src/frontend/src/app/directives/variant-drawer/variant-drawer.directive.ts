@@ -29,8 +29,9 @@ import {
   InvisibleSequenceGroup,
   LeafNode,
   LoopGroup,
-  OperatorGroup,
+  OptionalGroup,
   ParallelGroup,
+  RepeatGroup,
   SequenceGroup,
   SkipGroup,
   StartNode,
@@ -341,8 +342,10 @@ export class VariantDrawerDirective
       this.drawLoopGroup(element.asLoopGroup(), svgElement);
     } else if (element instanceof SkipGroup) {
       this.drawSkipGroup(element.asSkipGroup(), svgElement);
-    } else if (element instanceof OperatorGroup) {
-      this.drawOperatorGroup(element.asOperatorGroup(), svgElement);
+    } else if (element instanceof OptionalGroup) {
+      this.drawOptionalGroup(element.asOptionalGroup(), svgElement);
+    } else if (element instanceof RepeatGroup) {
+      this.drawRepeatGroup(element.asRepeatGroup(), svgElement);
     } else if (element instanceof StartNode) {
       this.drawStartNode(element.asStartNode(), svgElement);
     } else if (element instanceof EndNode) {
@@ -354,24 +357,138 @@ export class VariantDrawerDirective
     }
   }
 
-  public drawOperatorGroup(
-    element: OperatorGroup,
+  private ensurePattern(svg: d3.Selection<SVGSVGElement, any, any, any>, type: string) {
+  const defs = svg.select("defs").empty() ? svg.append("defs") : svg.select("defs");
+
+  const tile = 80;
+  const marks = [
+      { x: 15, y: 30, s: 19, o: 0.4 },
+      { x: 45, y: 55, s: 14, o: 0.4 },
+      { x: 65, y: 30, s: 12, o: 0.4 },
+      { x: 25, y: 75, s: 14, o: 0.4 },
+    ];
+  
+  if (type === "repeat") {
+    if (!defs.select("#repeat-loops").empty()) return;
+    
+
+    const pat = defs.append("pattern")
+      .attr("id", "repeat-loops")
+      .attr("patternUnits", "userSpaceOnUse") // <- keeps tile size constant
+      .attr("width", tile)
+      .attr("height", tile);
+
+    pat.append("rect")
+      .attr("width", tile)
+      .attr("height", tile)
+      .attr("fill", "lightgray")
+      .attr("opacity", 1);
+
+    pat.selectAll("text.rl")
+      .data(marks)
+      .enter()
+      .append("text")
+      .attr("class", "rl")
+      .attr("x", d => d.x)
+      .attr("y", d => d.y)
+      .attr("fill", "#383838")
+      .attr("font-size", d => d.s)
+      .attr("opacity", d => d.o)
+      .text("⟳");
+
+  } else if (type === "optional") {
+    if (!defs.select("#optional-qmarks").empty()) return;
+
+    const pat = defs.append("pattern")
+      .attr("id", "optional-qmarks")
+      .attr("patternUnits", "userSpaceOnUse") // <- keeps tile size constant
+      .attr("width", tile)
+      .attr("height", tile);
+
+    pat.append("rect")
+      .attr("width", tile)
+      .attr("height", tile)
+      .attr("fill", "lightgray")
+      .attr("opacity", 1);
+
+    pat.selectAll("text.qm")
+      .data(marks)
+      .enter()
+      .append("text")
+      .attr("class", "qm")
+      .attr("x", d => d.x)
+      .attr("y", d => d.y)
+      .attr("fill", "#383838")
+      .attr("font-size", d => d.s)
+      .attr("opacity", d => d.o)
+      .text("?");
+    }
+
+    else if (type === "wildcard") {
+    if (!defs.select("#wildcard-pattern").empty()) return;
+    const tile = 20;
+    
+    const pat = defs.append("pattern")
+      .attr("id", "wildcard-pattern")
+      .attr("patternUnits", "userSpaceOnUse")
+      .attr("width", tile)
+      .attr("height", tile);
+
+    pat.append("rect")
+      .attr("width", tile)
+      .attr("height", tile)
+      .attr("fill", "lightgray")
+      .attr("opacity", 1);
+
+    pat.selectAll("text.star")
+      .data([{x: 0, y: 0}, {x: 12, y: 4}, {x: 3, y: 14}, {x: 14, y: 14}, {x: 7, y: 6}])
+      .enter()
+      .append("text")
+      .attr("x", d => d.x)
+      .attr("y", d => d.y)
+      .attr("fill", "#383838")
+      .attr("font-size", 6)
+      .attr("opacity", 0.25)
+      .text("★");
+  } else if (type === "anything") {
+    if (!defs.select("#anything-subprocess").empty()) return;
+    const tile = 120
+    const pat = defs.append("pattern")
+      .attr("id", "anything-subprocess")
+      .attr("patternUnits", "userSpaceOnUse")
+      .attr("width", tile)
+      .attr("height", tile);
+
+    pat.append("rect")
+      .attr("width", tile)
+      .attr("height", tile)
+      .attr("fill", "lightgray")
+      .attr("opacity", 1);
+
+    pat.append("image")
+        .attr("href", "assets/png/any_node_background.png")
+        .attr("x", 0)
+        .attr("y", 0)
+        .attr("width", tile)
+        .attr("opacity", 0.25);
+  }
+
+  }
+
+
+  public drawOptionalGroup(
+    element: OptionalGroup,
     parent: Selection<any, any, any, any>
   ): void {
     const width = element.getWidth();
     const height = element.getHeight();
 
-    const repeatable = element.getRepeatable();
-    const repeatCount = element.getRepeatCount();
-    const optional = element.getOptional();
     let operator_font_size = VARIANT_Constants.FONT_SIZE_OPERATOR;
-    let operator_font_color = '#ddddddff';
-
-    let stroke_color = '#b8b8b880ff';
+    let operator_font_color = '#383838ff';
 
     const polygonPoints = this.polygonService.getPolygonPoints(width, height);
 
-    const operatorColor = '#4a91e275';
+    const operatorColor = 'transparent';
     let laElement = getLowestSelectionActionableElement(element);
     let actionable =
       laElement.parent !== null &&
@@ -384,10 +501,9 @@ export class VariantDrawerDirective
       actionable,
       true
     );
-    polygon
-      .style('stroke-dasharray', '4 2')
-      .style('stroke', stroke_color)
-      .style('stroke-width', '3px');
+    const svg = d3.select(this.svgHtmlElement.nativeElement) as any;
+    this.ensurePattern(svg, "optional");
+    polygon.style("fill", "url(#optional-qmarks)");
 
     if (
       this.traceInfixSelectionMode &&
@@ -424,13 +540,7 @@ export class VariantDrawerDirective
       element.getMarginX() -
       element.elements[0].getHeadLength();
 
-    if (repeatable) {
-      xOffset += VARIANT_Constants.MARGIN_X;
-    }
-
-    if (optional) {
-      xOffset += VARIANT_Constants.MARGIN_X;
-    }
+    xOffset += VARIANT_Constants.MARGIN_X;
 
     // Add small operator icons at the top-right of the wrapper
     const iconsGroup = parent.append('g');
@@ -450,48 +560,13 @@ export class VariantDrawerDirective
       .attr('dominant-baseline', 'middle')
       .attr('font-size', operator_font_size)
       .attr('fill', operator_font_color)
-      //.attr('font-weight', 'bold')
-      .attr('font-style', 'italic')
+      .attr('font-weight', 'bold')
       .classed('activity-text', true)
-      .text('? Optional');
+      .text('Optional');
 
-    if (optional) {
-      optionalGroup.style('display', 'inline');
-    } else {
-      optionalGroup.style('display', 'none');
-    }
-
-    const repeatGroup = iconsGroup.append('g');
-
-    if (optional) {
-      yOffset += VARIANT_Constants.MARGIN_Y + operator_font_size;
-    }
-
-    const repeatText = repeatGroup
-      .append('text')
-      .attr('display', 'block')
-      .attr('x', width / 2)
-      .attr('y', yOffset)
-      .classed('user-select-none', true)
-      .attr('text-anchor', 'middle')
-      .attr('dominant-baseline', 'middle')
-      .attr('font-size', operator_font_size)
-      // .attr('font-weight', 'bold')
-      .attr('fill', operator_font_color)
-      .classed('activity-text', true)
-      .attr('font-style', 'italic')
-      .text(`${repeatCount} x ⟳`);
-
-    (repeatText as any).on('click', (event: PointerEvent) => {
-      event.stopPropagation();
-      this.onRepeatClick(repeatText.node() as SVGGraphicsElement, element);
-    });
-
-    if (repeatable) {
-      repeatGroup.style('display', 'inline');
-    } else {
-      repeatGroup.style('display', 'none');
-    }
+    
+    optionalGroup.style('display', 'inline');
+    
 
     for (const child of element.elements) {
       if (
@@ -540,111 +615,199 @@ export class VariantDrawerDirective
       });
     }
 
-    // // Add small operator icons at the top-right of the wrapper
-    // const iconsGroup = parent.append('g');
-    // const iconSpacing = 27;
+    if (this.onMouseOverCbFc) {
+      this.onMouseOverCbFc(this, element, this.variant, parent);
+    }
+  }
 
-    // // Optional icon (question mark)
-    // const optH = 25;
-    // const startX = width - 2 * iconSpacing;
-    // const iconY = VARIANT_Constants.MARGIN_Y;
-    // const circleX = startX;
-    // const circleY = iconY;
-    // const radius = optH / 2;
+  public drawRepeatGroup(
+    element: RepeatGroup,
+    parent: Selection<any, any, any, any>
+  ): void {
+    const width = element.getWidth();
+    const height = element.getHeight();
 
-    // const optionalGroup = iconsGroup.append('g');
+    const repeatCountMin = element.getRepeatCountMin();
+    const repeatCountMax = element.getRepeatCountMax();
 
-    // // background rect (rounded)
-    // const optionalCircle = optionalGroup
-    //   .append('circle')
-    //   .attr('cx', circleX)
-    //   .attr('cy', circleY)
-    //   .attr('r', radius)
-    //   .attr('fill', '#df3806c2')
-    //   .attr('stroke', '#ffffff8e');
 
-    // // small question mark icon (left inside rect)
-    // optionalGroup
-    //   .append('text')
-    //   .attr('x', circleX)
-    //   .attr('y', circleY + 1)
-    //   .attr('text-anchor', 'middle') // horizontal center
-    //   .attr('dominant-baseline', 'middle') // vertical center
-    //   .attr('font-size', radius * 1.5)
-    //   .attr('font-weight', 'bold')
-    //   .attr('fill', '#fff')
-    //   .style('pointer-events', 'none')
-    //   .text('?');
+    let operator_font_size = VARIANT_Constants.FONT_SIZE_OPERATOR;
+    let operator_font_color = '#383838ff';
 
-    // (optionalCircle as any).on('click', (event: PointerEvent) => {
-    //   event.stopPropagation();
-    //   console.log('Clicked optional');
-    // });
 
-    // if (optional) {
-    //   optionalGroup.style('display', 'inline');
-    // } else {
-    //   optionalGroup.style('display', 'none');
-    // }
+    const polygonPoints = this.polygonService.getPolygonPoints(width, height);
 
-    // // Repeatable icon (circular arrow)
-    // const repeatGroup = iconsGroup.append('g');
+    const operatorColor = 'transparent';
+    let laElement = getLowestSelectionActionableElement(element);
+    let actionable =
+      laElement.parent !== null &&
+      laElement.infixSelectableState !== SelectableState.None;
 
-    // // background rect (rounded)
+    let polygon = this.createPolygon(
+      parent,
+      polygonPoints,
+      operatorColor,
+      actionable,
+      true
+    );
+    const svg = d3.select(this.svgHtmlElement.nativeElement) as any;
+    this.ensurePattern(svg, "repeat");
+    polygon.style("fill", "url(#repeat-loops)");
 
-    // const repeatCircle = repeatGroup
-    //   .append('circle')
-    //   .attr('cx', circleX + iconSpacing)
-    //   .attr('cy', circleY)
-    //   .attr('r', radius)
-    //   .attr('fill', '#00a738c2')
-    //   .attr('stroke', '#ffffff8e');
+    if (
+      this.traceInfixSelectionMode &&
+      element.parent &&
+      !(element instanceof InvisibleSequenceGroup)
+    ) {
+      this.addInfixSelectionAttributes(element, polygon, false);
+    }
 
-    // // small question mark icon (left inside rect)
-    // repeatGroup
-    //   .append('text')
-    //   .attr('x', circleX + iconSpacing)
-    //   .attr('y', circleY)
-    //   .attr('text-anchor', 'middle') // horizontal center
-    //   .attr('dominant-baseline', 'middle') // vertical center
-    //   .attr('font-size', radius * 0.75)
-    //   .attr('font-weight', 'bold')
-    //   .attr('fill', '#fff')
-    //   .style('pointer-events', 'none')
-    //   .text(`${repeatCount}x⟳`);
+    if (
+      element instanceof InvisibleSequenceGroup ||
+      element.parent instanceof SkipGroup
+    ) {
+      polygon.style('fill', 'transparent');
+    } else {
+      if (this.onClickCbFc) {
+        parent.on('click', (e: PointerEvent) => {
+          this.onVariantClick(element);
+          e.stopPropagation();
+        });
+      }
+    }
 
-    // (repeatCircle as any).on('click', (event: PointerEvent) => {
-    //   event.stopPropagation();
-    //   this.onRepeatClick(repeatCircle.node() as SVGGraphicsElement, element);
-    // });
+    let xOffset = 0;
 
-    // if (repeatable) {
-    //   repeatGroup.style('display', 'inline');
-    // } else {
-    //   repeatGroup.style('display', 'none');
-    // }
+    xOffset +=
+      element.getHeadLength() +
+      element.getMarginX() -
+      element.elements[0].getHeadLength();
+
+    xOffset += VARIANT_Constants.MARGIN_X;
+    
+    // Add small operator icons at the top-right of the wrapper
+    const iconsGroup = parent.append('g');
+
+    let yOffset = VARIANT_Constants.MARGIN_Y + operator_font_size / 2;
+
+    const repeatGroup = iconsGroup.append('g');
+
+    const repeatTextMin = repeatGroup
+      .append('text')
+      .attr('display', 'block')
+      .attr('x', width / 2)
+      .attr('y', yOffset)
+      .classed('user-select-none', true)
+      .attr('text-anchor', 'end')
+      .attr('dominant-baseline', 'middle')
+      .attr('font-size', operator_font_size)
+      .attr('font-weight', 'bold')
+      .attr('fill', operator_font_color)
+      .classed('activity-text', true)
+      .text(`⟳ ${repeatCountMin} -`);
+
+      // Limit display of max repeats to 200
+      let repeatCountMaxText = '∞';
+      if (repeatCountMax < 200) {
+        repeatCountMaxText = `${repeatCountMax}`;
+      }
+      
+      const repeatTextMax = repeatGroup
+      .append('text')
+      .attr('display', 'block')
+      .attr('x', width / 2 + 2)
+      .attr('y', yOffset)
+      .classed('user-select-none', true)
+      .attr('text-anchor', 'start')
+      .attr('dominant-baseline', 'middle')
+      .attr('font-size', operator_font_size)
+      .attr('font-weight', 'bold')
+      .attr('fill', operator_font_color)
+      .classed('activity-text', true)
+      .text(repeatCountMaxText);
+
+
+    (repeatTextMin as any).on('click', (event: PointerEvent) => {
+      event.stopPropagation();
+      this.onMinRepeatClick(repeatTextMin.node() as SVGGraphicsElement, element);
+    });
+
+    (repeatTextMax as any).on('click', (event: PointerEvent) => {
+      event.stopPropagation();
+      this.onMaxRepeatClick(repeatTextMax.node() as SVGGraphicsElement, element);
+    });
+
+    repeatGroup.style('display', 'inline');
+
+    for (const child of element.elements) {
+      if (
+        child instanceof WaitingTimeNode &&
+        (this.keepStandardView ||
+          this.variantViewModeService.viewMode !== ViewMode.PERFORMANCE)
+      ) {
+        continue;
+      }
+
+      const childWidth = child.getWidth(
+        !this.keepStandardView &&
+          this.variantViewModeService.viewMode === ViewMode.PERFORMANCE
+      );
+      const childHeight = child.getHeight();
+      const yOffset = height / 2 - childHeight / 2;
+      const g = parent
+        .append('g')
+        .attr('transform', `translate(${xOffset}, ${yOffset})`);
+
+      this.draw(child, g, false);
+      xOffset += childWidth;
+    }
+
+    if (this.onClickCbFc) {
+      parent.on('click', (e: PointerEvent) => {
+        this.onVariantClick(element);
+        e.stopPropagation();
+      });
+    }
+
+    if (this.onRightMouseClickCbFc || this.contextMenuComponent) {
+      parent.on('contextmenu', (e: PointerEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (this.onRightMouseClickCbFc) {
+          this.onRightMouseClickCbFc(this, element, this.variant, e);
+        }
+        if (this.contextMenuComponent?.contextMenu) {
+          this.contextMenuService.show(this.contextMenuComponent.contextMenu, {
+            value: element,
+            x: (e as any).x || (e as any).clientX,
+            y: (e as any).y || (e as any).clientY,
+          });
+        }
+      });
+    }
+
 
     if (this.onMouseOverCbFc) {
       this.onMouseOverCbFc(this, element, this.variant, parent);
     }
   }
 
-  private onRepeatClick(
+  private onMinRepeatClick(
     circleNode: SVGGraphicsElement,
-    element: OperatorGroup
+    element: RepeatGroup
   ) {
     if (!circleNode) return;
     const rect = circleNode.getBoundingClientRect();
     const input = document.createElement('input');
     input.type = 'number';
     input.min = '1';
-    input.value = String(element.getRepeatCount());
+    input.value = String(element.getRepeatCountMin());
     input.style.position = 'absolute';
     input.style.left = `${rect.left - rect.width * 0.4}px`;
     input.style.top = `${rect.top - rect.height * 0.15}px`;
-    input.style.width = `${rect.width * 1}px`;
-    input.style.height = `${rect.height * 1}px`;
-    input.style.fontSize = `${Math.max(12, rect.height * 0.6)}px`;
+    input.style.width = `80px`;
+    input.style.height = `50px`;
+    input.style.fontSize = `30px`;
     input.style.zIndex = '10000';
     input.style.padding = '2px 6px';
     input.style.borderRadius = '4px';
@@ -663,7 +826,67 @@ export class VariantDrawerDirective
     const submit = () => {
       const v = parseInt(input.value, 10);
       if (!isNaN(v) && v >= 1) {
-        element.setRepeatCount(v);
+        element.setRepeatCountMin(v);
+        this.redraw();
+      }
+      cleanup();
+    };
+
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Enter') {
+        submit();
+      } else if (e.key === 'Escape') {
+        cleanup();
+      }
+    };
+
+    // click outside -> submit and close
+    const onWindowMouse = (e: MouseEvent) => {
+      if (e.target !== input) {
+        submit();
+      }
+    };
+
+    input.addEventListener('keydown', onKey);
+    // add outside click listener asynchronously to avoid immediate trigger
+    window.addEventListener('click', onWindowMouse);
+  }
+
+  private onMaxRepeatClick(
+    circleNode: SVGGraphicsElement,
+    element: RepeatGroup
+  ) {
+    if (!circleNode) return;
+    const rect = circleNode.getBoundingClientRect();
+    const input = document.createElement('input');
+    input.type = 'number';
+    input.min = '1';
+    input.value = String(element.getRepeatCountMax());
+    input.style.position = 'absolute';
+    input.style.left = `${rect.left - rect.width * 0.4}px`;
+    input.style.top = `${rect.top - rect.height * 0.15}px`;
+    input.style.width = `80px`;
+    input.style.height = `50px`;
+    input.style.fontSize = `30px`;
+    input.style.zIndex = '10000';
+    input.style.padding = '2px 6px';
+    input.style.borderRadius = '4px';
+    input.style.border = '1px solid #ffffffa6';
+    input.style.backgroundColor = '#5a5a5a93';
+    (document.body || document.documentElement).appendChild(input);
+    input.focus();
+    input.select();
+
+    const cleanup = () => {
+      input.removeEventListener('keydown', onKey);
+      window.removeEventListener('mousedown', onWindowMouse);
+      if (input.parentElement) input.parentElement.removeChild(input);
+    };
+
+    const submit = () => {
+      const v = parseInt(input.value, 10);
+      if (!isNaN(v) && v >= 1) {
+        element.setRepeatCountMax(v);
         this.redraw();
       }
       cleanup();
@@ -792,7 +1015,7 @@ export class VariantDrawerDirective
     let height = element.getHeight();
     const polygonPoints = this.polygonService.getPolygonPoints(width, height);
 
-    const color = 'transparent';
+    const color = 'lightgray';
 
     let laElement = getLowestSelectionActionableElement(element);
 
@@ -808,11 +1031,16 @@ export class VariantDrawerDirective
       false
     );
 
+    // Apply subprocess pattern
+    const svg = d3.select(this.svgHtmlElement.nativeElement) as any;
+    this.ensurePattern(svg, "anything");
+    polygon.style("fill", "url(#anything-subprocess)");
+
     if (this.traceInfixSelectionMode) {
       this.addInfixSelectionAttributes(element, polygon, true);
     }
 
-    const textcolor = 'white';
+    const textcolor = '#383838ff';
 
     const activityText = parent
       .append('text')
@@ -821,7 +1049,8 @@ export class VariantDrawerDirective
       .classed('user-select-none', true)
       .attr('text-anchor', 'middle')
       .attr('dominant-baseline', 'middle')
-      .attr('font-size', 33)
+      .attr('font-size', VARIANT_Constants.FONT_SIZE)
+      .attr('font-weight', 'bold')
       .attr('fill', textcolor)
       .classed('activity-text', true);
 
@@ -895,7 +1124,7 @@ export class VariantDrawerDirective
     let height = element.getHeight();
     const polygonPoints = this.polygonService.getPolygonPoints(width, height);
 
-    const color = '#b1b1b142';
+    const color = '#5a5a5ab8';
 
     let laElement = getLowestSelectionActionableElement(element);
 
@@ -911,11 +1140,15 @@ export class VariantDrawerDirective
       false
     );
 
+    const svg = d3.select(this.svgHtmlElement.nativeElement) as any;
+    this.ensurePattern(svg, "wildcard");  // Add new pattern type
+    polygon.style("fill", "url(#wildcard-pattern)");  // Apply pattern
+
     if (this.traceInfixSelectionMode) {
       this.addInfixSelectionAttributes(element, polygon, true);
     }
 
-    const textcolor = 'white';
+    const textcolor = '#383838ff';
 
     const activityText = parent
       .append('text')
@@ -930,11 +1163,20 @@ export class VariantDrawerDirective
       .classed('activity-text', true);
 
     let y = height / 2;
+    if (element.activity.length > 1 && element.expanded) {
+      y =
+        height / 2 -
+        ((element.activity.length - 1) / 2) *
+          (VARIANT_Constants.FONT_SIZE + VARIANT_Constants.MARGIN_Y);
+    }
 
     let truncated = false;
     let dy = 0;
 
-    element.activity.forEach((a, _i) => {
+    // When collapsed, only show first activity
+    const activitiesToShow = element.expanded ? element.activity : [element.activity[0]];
+
+    activitiesToShow.forEach((a, _i) => {
       const tspan = activityText
         .append('tspan')
         .attr('x', width / 2)
@@ -2001,6 +2243,7 @@ export class VariantDrawerDirective
   ): boolean {
     let textLength = this.getComputedTextLength(textSelection);
     //let textLength = textSelection.node().getBoundingClientRect().width;
+    console.log('Inner Text length before Wrap', text, textLength, maxWidth);
 
     let truncated = false;
     while (textLength > maxWidth && text.length > 1) {
@@ -2010,9 +2253,12 @@ export class VariantDrawerDirective
       }
       textSelection.text(text + '..');
       textLength = this.getComputedTextLength(textSelection);
+      console.log(text, textLength, maxWidth);
       //textLength = textSelection.node().getBoundingClientRect().width;
       truncated = true;
     }
+
+    console.log('Final Text after Wrap', textSelection.text());
 
     if (text === 'W_Nabellen incomplete dossiers' && !truncated) {
       console.log('Inner Text length after Wrap', text, textLength, maxWidth);
@@ -2032,7 +2278,13 @@ export class VariantDrawerDirective
         textSelection.text()
       );
     } else {
-      textLength = textSelection.node().getBoundingClientRect().width;
+      const node = textSelection.node();
+      // Use SVG's native getComputedTextLength() for accurate measurement
+      if (typeof node.getComputedTextLength === 'function') {
+        textLength = node.getComputedTextLength();
+      } else {
+        textLength = node.getBoundingClientRect().width;
+      }
       if (textLength == 0) {
         textLength =
           textSelection.text().length * VARIANT_Constants.CHAR_LENGTH;

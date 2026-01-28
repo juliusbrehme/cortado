@@ -34,7 +34,8 @@ import {
   SequenceGroup,
   VariantElement,
   ChoiceGroup,
-  OperatorGroup,
+  OptionalGroup,
+  RepeatGroup,
   FallthroughGroup,
   StartNode,
   EndNode,
@@ -78,7 +79,7 @@ export class VariantQueryModelerComponent
   editorX: number = 0;
   editorY: number = 0;
   editorValue: number | string = '';
-  private editorTarget: any = null; // OperatorGroup
+  private editorTarget: any = null;
 
   activityNames: Array<String> = [];
 
@@ -440,7 +441,7 @@ export class VariantQueryModelerComponent
     if (variant instanceof ChoiceGroup || variant instanceof FallthroughGroup) {
       this.fireAlert(
         'Parallel Insertion Error',
-        'Cannot insert parallel activities into this operator group.',
+        'Cannot insert parallel activities into this group.',
         'info'
       );
       return;
@@ -639,7 +640,13 @@ export class VariantQueryModelerComponent
     }
   }
 
-  onOperatorSelected(operatorType: string) {
+  /** Handler for OptionalGroup creation
+   *  Constraints:
+   *  - Cannot be direct child of FallthroughGroup or ChoiceGroup
+   *  - Cannot be nested within a single parent RepeatGroup
+   *  - Cannot be applied in/on single OptionalGroup
+   */
+  onOptionalSelected() {
     const selectedElements = this.variantEnrichedSelection
       .selectAll('.selected-variant-g')
       .data();
@@ -648,7 +655,7 @@ export class VariantQueryModelerComponent
     if (!selectedElements || selectedElements.length === 0) {
       this.fireAlert(
         'Selection Error',
-        'Please select at least one activity to apply the operator.',
+        'Please select at least one activity to apply to.',
         'info'
       );
       return;
@@ -660,17 +667,28 @@ export class VariantQueryModelerComponent
 
     const children = parent.getElements();
 
-    // If our selection is within an OperatorGroup, we do not allow nesting
-    if (parent instanceof OperatorGroup && selectedElements.length === 1) {
-      // We toggle the operator on the existing OperatorGroup
-      this.toggleOperatorGroup(parent, operatorType);
+    if (parent instanceof RepeatGroup && children.length === selectedElements.length) {
+      this.fireAlert(
+        'Optional Group Error',
+        'Optional groups cannot be single children of Repeat Groups.',
+        'info'
+      );
+      return;
+    }
+
+    if (parent instanceof OptionalGroup && children.length === selectedElements.length) {
+      this.fireAlert(
+        'Optional Group Error',
+        'Optional groups cannot be single children of Optional Groups.',
+        'info'
+      );
       return;
     }
 
     if (parent instanceof FallthroughGroup || parent instanceof ChoiceGroup) {
       this.fireAlert(
-        'Operator Group Error',
-        'Cannot apply operator groups within Fallthrough or Choice Groups.',
+        'Optional Group Error',
+        'Cannot apply optional groups within Fallthrough or Choice Groups.',
         'info'
       );
       return;
@@ -678,17 +696,17 @@ export class VariantQueryModelerComponent
 
     if (
       selectedElements.length === 1 &&
-      selectedElements[0] instanceof OperatorGroup
+      selectedElements[0] instanceof OptionalGroup 
     ) {
-      // We toggle the operator on the existing OperatorGroup
-      this.toggleOperatorGroup(
-        selectedElements[0] as OperatorGroup,
-        operatorType
+      this.fireAlert(
+        'Optional Group Error',
+        'Cannot apply Optional Groups on single Optional Groups.',
+        'info'
       );
       return;
     }
 
-    // The index where to insert the OperatorGroup
+    // The index where to insert the Group
     let first_idx = -1;
     // Check if all selected elements have the same parent and are continuous
     let current_idx = -1;
@@ -709,12 +727,7 @@ export class VariantQueryModelerComponent
     // Remove selected elements from parent's children
     children.splice(first_idx, selectedElements.length);
 
-    const operator = new OperatorGroup(selectedElements as VariantElement[]);
-    if (operatorType === 'repeatable') {
-      operator.toggleRepeatable();
-    } else if (operatorType === 'optional') {
-      operator.toggleOptional();
-    }
+    const operator = new OptionalGroup(selectedElements as VariantElement[]);
 
     children.splice(first_idx, 0, operator);
     parent.setElements(children);
@@ -723,37 +736,109 @@ export class VariantQueryModelerComponent
     this.triggerRedraw();
   }
 
-  toggleOperatorGroup(group: OperatorGroup, operatorType: string) {
-    if (operatorType === 'repeatable') {
-      group.toggleRepeatable();
-    } else if (operatorType === 'optional') {
-      group.toggleOptional();
+  /** Handler for OptionalGroup creation
+   *  Constraints:
+   *  - Cannot be direct child of FallthroughGroup or ChoiceGroup
+   *  - Cannot be applied on top of OptionalGroup
+   *  - Cannot be applied on single RepeatGroup
+   */
+  onRepeatableSelected(){
+    const selectedElements = this.variantEnrichedSelection
+      .selectAll('.selected-variant-g')
+      .data();
+
+    // If nothing selected, nothing to do
+    if (!selectedElements || selectedElements.length === 0) {
+      this.fireAlert(
+        'Selection Error',
+        'Please select at least one activity to apply to.',
+        'info'
+      );
+      return;
     }
-    // If we toggled off both operators, we remove the OperatorGroup
-    if (group.getRepeatable() === false && group.getOptional() === false) {
-      // If both operators are off, we remove the OperatorGroup
-      const grandParent = this.findParent(this.currentVariant, group);
-      const grandChildren = grandParent.getElements();
-      const parentIdx = grandChildren.indexOf(group);
-      // Remove the OperatorGroup and insert its children in its place
-      grandChildren.splice(parentIdx, 1, ...group.getElements());
-      grandParent.setElements(grandChildren);
+
+    // We want only one parent so we select just one and check if the selection is valid
+    const parent = this.findParent(this.currentVariant, selectedElements[0]);
+    if (!parent) return;
+
+    const children = parent.getElements();
+
+    // If our selection is within an R, we do not allow nesting
+    if (parent instanceof RepeatGroup && selectedElements.length === children.length) {
+      this.fireAlert(
+        'Repeat Group Error',
+        'Repeat groups cannot be single children of Repeat Groups.',
+        'info'
+      );
+      return;
     }
+
+    if (parent instanceof FallthroughGroup || parent instanceof ChoiceGroup) {
+      this.fireAlert(
+        'Repeat Group Error',
+        'Cannot apply repeat Repeat Groups within Fallthrough or Choice Groups.',
+        'info'
+      );
+      return;
+    }
+
+    if (
+      selectedElements.length === 1 &&
+      selectedElements[0] instanceof RepeatGroup
+    ) {
+      this.fireAlert(
+        'Repeat Group Error',
+        'Repeat Groups cannot be single children of Repeat Groups.',
+        'info'
+      );
+      return;
+    }
+
+    if (
+      selectedElements.length === 1 &&
+      selectedElements[0] instanceof OptionalGroup
+    ) {
+      this.fireAlert(
+        'Repeat Group Error',
+        'Repeat Groups cannot be single children of Optional Groups.',
+        'info'
+      );
+      return;
+    }
+
+    // The index where to insert the Group
+    let first_idx = -1;
+    // Check if all selected elements have the same parent and are continuous
+    let current_idx = -1;
+    for (const leaf of selectedElements) {
+      const leaf_parent = this.findParent(this.currentVariant, leaf);
+      if (parent !== leaf_parent) return;
+      const idx = children.indexOf(leaf);
+      if (current_idx == -1) {
+        current_idx = idx;
+        first_idx = idx;
+      } else if (idx !== current_idx + 1) {
+        // Not continuous selection
+        return;
+      }
+      if (idx === -1) return;
+    }
+
+    // Remove selected elements from parent's children
+    children.splice(first_idx, selectedElements.length);
+
+    const operator = new RepeatGroup(selectedElements as VariantElement[]);
+
+    children.splice(first_idx, 0, operator);
+    parent.setElements(children);
+
     this.cacheCurrentVariant();
     this.triggerRedraw();
   }
 
-  onRepeatableSelected() {
-    this.onOperatorSelected('repeatable');
-  }
-
-  onOptionalSelected() {
-    this.onOperatorSelected('optional');
-  }
-
   /** Handler for ChoiceGroup creation
    *  Constraints:
-   *  - Only a single LeafNode can be selected
+   *  - Only a single LeafNode/WildcardNode can be selected
    */
   onChoiceSelected() {
     const selectedElements = this.variantEnrichedSelection
@@ -763,30 +848,24 @@ export class VariantQueryModelerComponent
     if (!selectedElements || selectedElements.length === 0) {
       this.fireAlert(
         'Selection Error',
-        'Please select at least one activity to apply the operator.',
+        'Please select at least one activity to apply to.',
         'info'
       );
       return;
     }
-    // If selection is a single LeafNode, replace it by a ChoiceGroup containing that element
+    // If selection is a single LeafNode/WildcardNode, replace it by a ChoiceGroup containing that element
     if (
       selectedElements.length === 1 &&
-      selectedElements[0] instanceof LeafNode
+      (selectedElements[0] instanceof LeafNode || 
+        selectedElements[0] instanceof WildcardNode)
     ) {
-      const leaf = selectedElements[0] as LeafNode;
+      const leaf = selectedElements[0] as VariantElement;
       const parent = this.findParent(this.currentVariant, leaf);
       if (!parent) return;
-      else if (!(leaf instanceof LeafNode)) {
+      else if (parent instanceof FallthroughGroup) {
         this.fireAlert(
           'Choice Group Error',
-          'A Choice Group can just contain Leaf Nodes.',
-          'info'
-        );
-        return;
-      } else if (parent instanceof FallthroughGroup) {
-        this.fireAlert(
-          'Choice Group Error',
-          'Cannot insert operator into a Fallthrough Group.',
+          'Cannot insert Group into a Fallthrough Group.',
           'info'
         );
         return;
@@ -811,6 +890,11 @@ export class VariantQueryModelerComponent
     );
   }
 
+  /** Handler for FallthroughGroup creation
+   *  Constraints:
+   *  - Can not be child of ChoiceGroup
+   *  - Can just contain LeafNodes
+   */
   onFallthroughSelected() {
     const selectedElements = this.variantEnrichedSelection
       .selectAll('.selected-variant-g')
@@ -819,7 +903,7 @@ export class VariantQueryModelerComponent
     if (!selectedElements || selectedElements.length === 0) {
       this.fireAlert(
         'Selection Error',
-        'Please select at least one activity to apply the operator.',
+        'Please select at least one activity to apply to.',
         'info'
       );
       return;
@@ -832,18 +916,22 @@ export class VariantQueryModelerComponent
     if (parent instanceof ChoiceGroup) {
       this.fireAlert(
         'Fallthrough Group Error',
-        'Cannot insert operator into a Choice Group.',
+        'Cannot insert group into a Choice Group.',
         'info'
       );
       return;
     }
 
     const children = parent.getElements();
-
     if (
       selectedElements.length === 1 &&
       selectedElements[0] instanceof FallthroughGroup
     ) {
+      this.fireAlert(
+        'Fallthrough Group Error',
+        'Cannot insert group into a Fallthrough Group.',
+        'info'
+      );
       return;
     }
 
@@ -963,6 +1051,12 @@ export class VariantQueryModelerComponent
     });
   }
 
+   /** Handler for Start/End node creation
+   *  Constraints:
+   *  - Cannot have more than one Start or End node in a variant
+   *  - Start node must be at the beginning of the variant
+   *  - End node must be at the end of the variant
+   */
   insertStartEndNodes(node: StartNode | EndNode) {
     const children = this.currentVariant.getElements();
     if (node instanceof StartNode) {
@@ -970,7 +1064,7 @@ export class VariantQueryModelerComponent
       if (firstChild instanceof StartNode) {
         this.fireAlert(
           'Node placement not valid',
-          'A start node is already present at the beginning of the variant.',
+          'A Start Node is already present at the beginning of the variant.',
           'info'
         );
         return;
@@ -981,7 +1075,7 @@ export class VariantQueryModelerComponent
       if (lastChild instanceof EndNode) {
         this.fireAlert(
           'Node placement not valid',
-          'An end node is already present at the end of the variant.',
+          'An End Node is already present at the end of the variant.',
           'info'
         );
         return;
@@ -1571,6 +1665,8 @@ export class VariantQueryModelerComponent
       if (node) {
         // Deep clone to ensure we capture the current state
         node.variantElement = cloneDeep(this.currentVariant);
+        // Ensure preview is collapsed in logic tree
+        node.variantElement?.setExpanded(false);
       }
     }
   }

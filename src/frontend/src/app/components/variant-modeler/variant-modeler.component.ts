@@ -119,8 +119,6 @@ export class VariantModelerComponent
         }
       });
 
-    // Test adding a wildcard default activity
-    this.activityNames.push('WILDCARD');
 
     this.logService.loadedEventLog$
       .pipe(takeUntil(this._destroy$))

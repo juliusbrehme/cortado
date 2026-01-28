@@ -34,7 +34,7 @@
 }
 
 .node.selected {
-  filter: drop-shadow(0 0 8px #474747) brightness(1.15);
+  filter: drop-shadow(0 0 8px #7b7b7b) brightness(1.35);
   stroke: #c5c5c5;
   stroke-width: 2;
 }
