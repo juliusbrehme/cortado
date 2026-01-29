@@ -245,9 +245,8 @@ export class QueryLogicTreeComponent implements OnInit, OnDestroy {
     const copy = node.variantElement.copy();
     copy.setExpanded(false);
 
-  
     this.traverseVariantElements([copy]);
-    
+
     return copy;
   }
 
@@ -256,10 +255,12 @@ export class QueryLogicTreeComponent implements OnInit, OnDestroy {
       if (el instanceof ChoiceGroup) {
         el.asChoiceGroup().setCollapsed(true);
       }
-      if (el instanceof ParallelGroup 
-        || el instanceof SequenceGroup 
-        || el instanceof LoopGroup 
-        || el instanceof OptionalGroup) {
+      if (
+        el instanceof ParallelGroup ||
+        el instanceof SequenceGroup ||
+        el instanceof LoopGroup ||
+        el instanceof OptionalGroup
+      ) {
         this.traverseVariantElements(el.getElements());
       }
     });

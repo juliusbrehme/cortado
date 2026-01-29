@@ -119,7 +119,6 @@ export class VariantModelerComponent
         }
       });
 
-
     this.logService.loadedEventLog$
       .pipe(takeUntil(this._destroy$))
       .subscribe((newLog) => {

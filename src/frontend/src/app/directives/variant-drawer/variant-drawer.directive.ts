@@ -357,156 +357,178 @@ export class VariantDrawerDirective
     }
   }
 
-  private ensurePattern(svg: d3.Selection<SVGSVGElement, any, any, any>, type: string) {
-  const defs = svg.select("defs").empty() ? svg.append("defs") : svg.select("defs");
+  private ensurePattern(
+    svg: d3.Selection<SVGSVGElement, any, any, any>,
+    type: string
+  ) {
+    const defs = svg.select('defs').empty()
+      ? svg.append('defs')
+      : svg.select('defs');
 
-  const tile = 80;
-  const marks = [
+    const tile = 80;
+    const marks = [
       { x: 15, y: 30, s: 19, o: 0.4 },
       { x: 45, y: 55, s: 14, o: 0.4 },
       { x: 65, y: 30, s: 12, o: 0.4 },
       { x: 25, y: 75, s: 14, o: 0.4 },
     ];
-  
-  if (type === "repeat") {
-    if (!defs.select("#repeat-loops").empty()) return;
 
-    const pat = defs.append("pattern")
-      .attr("id", "repeat-loops")
-      .attr("patternUnits", "userSpaceOnUse") // <- keeps tile size constant
-      .attr("width", tile)
-      .attr("height", tile);
+    if (type === 'repeat') {
+      if (!defs.select('#repeat-loops').empty()) return;
 
-    pat.append("rect")
-      .attr("width", tile)
-      .attr("height", tile)
-      .attr("fill", "lightgray")
-      .attr("opacity", 1);
+      const pat = defs
+        .append('pattern')
+        .attr('id', 'repeat-loops')
+        .attr('patternUnits', 'userSpaceOnUse') // <- keeps tile size constant
+        .attr('width', tile)
+        .attr('height', tile);
 
-    pat.selectAll("text.rl")
-      .data(marks)
-      .enter()
-      .append("text")
-      .attr("class", "rl")
-      .attr("x", d => d.x)
-      .attr("y", d => d.y)
-      .attr("fill", "#383838")
-      .attr("font-size", d => d.s)
-      .attr("opacity", d => d.o)
-      .text("⟳");
+      pat
+        .append('rect')
+        .attr('width', tile)
+        .attr('height', tile)
+        .attr('fill', 'lightgray')
+        .attr('opacity', 1);
 
-  } else if (type === "optional") {
-    if (!defs.select("#optional-qmarks").empty()) return;
+      pat
+        .selectAll('text.rl')
+        .data(marks)
+        .enter()
+        .append('text')
+        .attr('class', 'rl')
+        .attr('x', (d) => d.x)
+        .attr('y', (d) => d.y)
+        .attr('fill', '#383838')
+        .attr('font-size', (d) => d.s)
+        .attr('opacity', (d) => d.o)
+        .text('⟳');
+    } else if (type === 'optional') {
+      if (!defs.select('#optional-qmarks').empty()) return;
 
-    const pat = defs.append("pattern")
-      .attr("id", "optional-qmarks")
-      .attr("patternUnits", "userSpaceOnUse") // <- keeps tile size constant
-      .attr("width", tile)
-      .attr("height", tile);
+      const pat = defs
+        .append('pattern')
+        .attr('id', 'optional-qmarks')
+        .attr('patternUnits', 'userSpaceOnUse') // <- keeps tile size constant
+        .attr('width', tile)
+        .attr('height', tile);
 
-    pat.append("rect")
-      .attr("width", tile)
-      .attr("height", tile)
-      .attr("fill", "lightgray")
-      .attr("opacity", 1);
+      pat
+        .append('rect')
+        .attr('width', tile)
+        .attr('height', tile)
+        .attr('fill', 'lightgray')
+        .attr('opacity', 1);
 
-    pat.selectAll("text.qm")
-      .data(marks)
-      .enter()
-      .append("text")
-      .attr("class", "qm")
-      .attr("x", d => d.x)
-      .attr("y", d => d.y)
-      .attr("fill", "#383838")
-      .attr("font-size", d => d.s)
-      .attr("opacity", d => d.o)
-      .text("?");
-  }  else if (type === "fallthrough") {
-    if (!defs.select("#fallthrough-arrows").empty()) return;
-    const tile = 80;
-    const marks = [
-      { x: 5, y: 15, s: 19, o: 0.4 },
-      { x: 15, y: 35, s: 17, o: 0.4 },
-      { x: 35, y: 55, s: 14, o: 0.4 },
-      { x: 65, y: 30, s: 12, o: 0.4 },
-      { x: 55, y: 55, s: 12, o: 0.4 },
-      { x: 25, y: 75, s: 14, o: 0.4 },
-    ];
-    const pat = defs.append("pattern")
-      .attr("id", "fallthrough-arrows")
-      .attr("patternUnits", "userSpaceOnUse") // <- keeps tile size constant
-      .attr("width", tile)
-      .attr("height", tile);
+      pat
+        .selectAll('text.qm')
+        .data(marks)
+        .enter()
+        .append('text')
+        .attr('class', 'qm')
+        .attr('x', (d) => d.x)
+        .attr('y', (d) => d.y)
+        .attr('fill', '#383838')
+        .attr('font-size', (d) => d.s)
+        .attr('opacity', (d) => d.o)
+        .text('?');
+    } else if (type === 'fallthrough') {
+      if (!defs.select('#fallthrough-arrows').empty()) return;
+      const tile = 80;
+      const marks = [
+        { x: 5, y: 15, s: 19, o: 0.4 },
+        { x: 15, y: 35, s: 17, o: 0.4 },
+        { x: 35, y: 55, s: 14, o: 0.4 },
+        { x: 65, y: 30, s: 12, o: 0.4 },
+        { x: 55, y: 55, s: 12, o: 0.4 },
+        { x: 25, y: 75, s: 14, o: 0.4 },
+      ];
+      const pat = defs
+        .append('pattern')
+        .attr('id', 'fallthrough-arrows')
+        .attr('patternUnits', 'userSpaceOnUse') // <- keeps tile size constant
+        .attr('width', tile)
+        .attr('height', tile);
 
-    pat.append("rect")
-      .attr("width", tile)
-      .attr("height", tile)
-      .attr("fill", "lightgray")
-      .attr("opacity", 1);
+      pat
+        .append('rect')
+        .attr('width', tile)
+        .attr('height', tile)
+        .attr('fill', 'lightgray')
+        .attr('opacity', 1);
 
-    pat.selectAll("text.fa")
-      .data(marks)
-      .enter()
-      .append("text")
-      .attr("class", "fa")
-      .attr("x", d => d.x)
-      .attr("y", d => d.y)
-      .attr("fill", "#383838")
-      .attr("font-size", d => d.s)
-      .attr("opacity", d => d.o)
-      .text("⇆");
+      pat
+        .selectAll('text.fa')
+        .data(marks)
+        .enter()
+        .append('text')
+        .attr('class', 'fa')
+        .attr('x', (d) => d.x)
+        .attr('y', (d) => d.y)
+        .attr('fill', '#383838')
+        .attr('font-size', (d) => d.s)
+        .attr('opacity', (d) => d.o)
+        .text('⇆');
+    } else if (type === 'wildcard') {
+      if (!defs.select('#wildcard-pattern').empty()) return;
+      const tile = 20;
 
-  } else if (type === "wildcard") {
-    if (!defs.select("#wildcard-pattern").empty()) return;
-    const tile = 20;
-    
-    const pat = defs.append("pattern")
-      .attr("id", "wildcard-pattern")
-      .attr("patternUnits", "userSpaceOnUse")
-      .attr("width", tile)
-      .attr("height", tile);
+      const pat = defs
+        .append('pattern')
+        .attr('id', 'wildcard-pattern')
+        .attr('patternUnits', 'userSpaceOnUse')
+        .attr('width', tile)
+        .attr('height', tile);
 
-    pat.append("rect")
-      .attr("width", tile)
-      .attr("height", tile)
-      .attr("fill", "lightgray")
-      .attr("opacity", 1);
+      pat
+        .append('rect')
+        .attr('width', tile)
+        .attr('height', tile)
+        .attr('fill', 'lightgray')
+        .attr('opacity', 1);
 
-    pat.selectAll("text.star")
-      .data([{x: 0, y: 0}, {x: 12, y: 4}, {x: 3, y: 14}, {x: 14, y: 14}, {x: 7, y: 6}])
-      .enter()
-      .append("text")
-      .attr("x", d => d.x)
-      .attr("y", d => d.y)
-      .attr("fill", "#383838")
-      .attr("font-size", 6)
-      .attr("opacity", 0.25)
-      .text("★");
-  } else if (type === "anything") {
-    if (!defs.select("#anything-subprocess").empty()) return;
-    const tile = 120
-    const pat = defs.append("pattern")
-      .attr("id", "anything-subprocess")
-      .attr("patternUnits", "userSpaceOnUse")
-      .attr("width", tile)
-      .attr("height", tile);
+      pat
+        .selectAll('text.star')
+        .data([
+          { x: 0, y: 0 },
+          { x: 12, y: 4 },
+          { x: 3, y: 14 },
+          { x: 14, y: 14 },
+          { x: 7, y: 6 },
+        ])
+        .enter()
+        .append('text')
+        .attr('x', (d) => d.x)
+        .attr('y', (d) => d.y)
+        .attr('fill', '#383838')
+        .attr('font-size', 6)
+        .attr('opacity', 0.25)
+        .text('★');
+    } else if (type === 'anything') {
+      if (!defs.select('#anything-subprocess').empty()) return;
+      const tile = 120;
+      const pat = defs
+        .append('pattern')
+        .attr('id', 'anything-subprocess')
+        .attr('patternUnits', 'userSpaceOnUse')
+        .attr('width', tile)
+        .attr('height', tile);
 
-    pat.append("rect")
-      .attr("width", tile)
-      .attr("height", tile)
-      .attr("fill", "lightgray")
-      .attr("opacity", 1);
+      pat
+        .append('rect')
+        .attr('width', tile)
+        .attr('height', tile)
+        .attr('fill', 'lightgray')
+        .attr('opacity', 1);
 
-    pat.append("image")
-        .attr("href", "assets/png/any_node_background.png")
-        .attr("x", 0)
-        .attr("y", 0)
-        .attr("width", tile)
-        .attr("opacity", 0.25);
+      pat
+        .append('image')
+        .attr('href', 'assets/png/any_node_background.png')
+        .attr('x', 0)
+        .attr('y', 0)
+        .attr('width', tile)
+        .attr('opacity', 0.25);
+    }
   }
-
-  }
-
 
   public drawOptionalGroup(
     element: OptionalGroup,
@@ -534,8 +556,8 @@ export class VariantDrawerDirective
       true
     );
     const svg = d3.select(this.svgHtmlElement.nativeElement) as any;
-    this.ensurePattern(svg, "optional");
-    polygon.style("fill", "url(#optional-qmarks)");
+    this.ensurePattern(svg, 'optional');
+    polygon.style('fill', 'url(#optional-qmarks)');
 
     if (
       this.traceInfixSelectionMode &&
@@ -596,9 +618,7 @@ export class VariantDrawerDirective
       .classed('activity-text', true)
       .text('Optional');
 
-    
     optionalGroup.style('display', 'inline');
-    
 
     for (const child of element.elements) {
       if (
@@ -662,10 +682,8 @@ export class VariantDrawerDirective
     const repeatCountMin = element.getRepeatCountMin();
     const repeatCountMax = element.getRepeatCountMax();
 
-
     let operator_font_size = VARIANT_Constants.FONT_SIZE_OPERATOR;
     let operator_font_color = '#383838ff';
-
 
     const polygonPoints = this.polygonService.getPolygonPoints(width, height);
 
@@ -683,8 +701,8 @@ export class VariantDrawerDirective
       true
     );
     const svg = d3.select(this.svgHtmlElement.nativeElement) as any;
-    this.ensurePattern(svg, "repeat");
-    polygon.style("fill", "url(#repeat-loops)");
+    this.ensurePattern(svg, 'repeat');
+    polygon.style('fill', 'url(#repeat-loops)');
 
     if (
       this.traceInfixSelectionMode &&
@@ -716,7 +734,7 @@ export class VariantDrawerDirective
       element.elements[0].getHeadLength();
 
     xOffset += VARIANT_Constants.MARGIN_X;
-    
+
     // Add small operator icons at the top-right of the wrapper
     const iconsGroup = parent.append('g');
 
@@ -738,13 +756,13 @@ export class VariantDrawerDirective
       .classed('activity-text', true)
       .text(`⟳ ${repeatCountMin} -`);
 
-      // Limit display of max repeats to 200
-      let repeatCountMaxText = '∞';
-      if (repeatCountMax < 200) {
-        repeatCountMaxText = `${repeatCountMax}`;
-      }
-      
-      const repeatTextMax = repeatGroup
+    // Limit display of max repeats to 200
+    let repeatCountMaxText = '∞';
+    if (repeatCountMax < 200) {
+      repeatCountMaxText = `${repeatCountMax}`;
+    }
+
+    const repeatTextMax = repeatGroup
       .append('text')
       .attr('display', 'block')
       .attr('x', width / 2 + 2)
@@ -758,15 +776,20 @@ export class VariantDrawerDirective
       .classed('activity-text', true)
       .text(repeatCountMaxText);
 
-
     (repeatTextMin as any).on('click', (event: PointerEvent) => {
       event.stopPropagation();
-      this.onMinRepeatClick(repeatTextMin.node() as SVGGraphicsElement, element);
+      this.onMinRepeatClick(
+        repeatTextMin.node() as SVGGraphicsElement,
+        element
+      );
     });
 
     (repeatTextMax as any).on('click', (event: PointerEvent) => {
       event.stopPropagation();
-      this.onMaxRepeatClick(repeatTextMax.node() as SVGGraphicsElement, element);
+      this.onMaxRepeatClick(
+        repeatTextMax.node() as SVGGraphicsElement,
+        element
+      );
     });
 
     repeatGroup.style('display', 'inline');
@@ -817,7 +840,6 @@ export class VariantDrawerDirective
         }
       });
     }
-
 
     if (this.onMouseOverCbFc) {
       this.onMouseOverCbFc(this, element, this.variant, parent);
@@ -1065,8 +1087,8 @@ export class VariantDrawerDirective
 
     // Apply subprocess pattern
     const svg = d3.select(this.svgHtmlElement.nativeElement) as any;
-    this.ensurePattern(svg, "anything");
-    polygon.style("fill", "url(#anything-subprocess)");
+    this.ensurePattern(svg, 'anything');
+    polygon.style('fill', 'url(#anything-subprocess)');
 
     if (this.traceInfixSelectionMode) {
       this.addInfixSelectionAttributes(element, polygon, true);
@@ -1173,8 +1195,8 @@ export class VariantDrawerDirective
     );
 
     const svg = d3.select(this.svgHtmlElement.nativeElement) as any;
-    this.ensurePattern(svg, "wildcard");  // Add new pattern type
-    polygon.style("fill", "url(#wildcard-pattern)");  // Apply pattern
+    this.ensurePattern(svg, 'wildcard'); // Add new pattern type
+    polygon.style('fill', 'url(#wildcard-pattern)'); // Apply pattern
 
     if (this.traceInfixSelectionMode) {
       this.addInfixSelectionAttributes(element, polygon, true);
@@ -1206,7 +1228,9 @@ export class VariantDrawerDirective
     let dy = 0;
 
     // When collapsed, only show first activity
-    const activitiesToShow = element.expanded ? element.activity : [element.activity[0]];
+    const activitiesToShow = element.expanded
+      ? element.activity
+      : [element.activity[0]];
 
     activitiesToShow.forEach((a, _i) => {
       const tspan = activityText
@@ -1801,8 +1825,8 @@ export class VariantDrawerDirective
     );
 
     const svg = d3.select(this.svgHtmlElement.nativeElement) as any;
-    this.ensurePattern(svg, "fallthrough");
-    polygon.style("fill", "url(#fallthrough-arrows)");
+    this.ensurePattern(svg, 'fallthrough');
+    polygon.style('fill', 'url(#fallthrough-arrows)');
 
     if (
       this.traceInfixSelectionMode &&
@@ -2148,7 +2172,6 @@ export class VariantDrawerDirective
   }
 
   onVariantClick(element: VariantElement) {
-    console.log('Variant element clicked:', element);
     this.onClickCbFc(this, element, this.variant);
     this.redrawArcsIfComputed.emit();
   }

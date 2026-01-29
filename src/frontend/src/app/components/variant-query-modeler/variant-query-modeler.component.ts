@@ -267,6 +267,16 @@ export class VariantQueryModelerComponent
           .selectAll('.selected-variant-g')
           .data()[0];
 
+        // Check if trying to insert into a locked Optional/Repeat group within ParallelGroup
+        if (this.isInsideLockedGroup(selectedElement)) {
+          this.fireAlert(
+            'Insertion Error',
+            'Cannot modify Optional or Repeat groups that are children of a Parallel group.',
+            'info'
+          );
+          return;
+        }
+
         switch (this.selectedStrategy) {
           case this.insertionStrategy.infront:
             if (!this.multipleSelected) {
@@ -301,23 +311,30 @@ export class VariantQueryModelerComponent
             }
             break;
           case this.insertionStrategy.parallel:
+            let inserted = false;
             if (!this.multipleSelected) {
-              this.handleParallelInsert(
+              inserted = this.handleParallelInsert(
                 this.currentVariant,
                 leaf,
                 selectedElement
               );
-            } else {
-              const selectedElements = this.variantEnrichedSelection
-                .selectAll('.selected-variant-g')
-                .data();
-              this.handleMultiParallelInsert(
-                this.currentVariant,
-                leaf,
-                selectedElements
-              );
             }
-            this.sortParallel(this.findParent(this.currentVariant, leaf));
+            // else {
+            //   const selectedElements = this.variantEnrichedSelection
+            //     .selectAll('.selected-variant-g')
+            //     .data();
+            //   this.handleMultiParallelInsert(
+            //     this.currentVariant,
+            //     leaf,
+            //     selectedElements
+            //   );
+            //   inserted = true;
+            // }
+            if (inserted) {
+              this.sortParallel(this.findParent(this.currentVariant, leaf));
+            }
+            // Only proceed with redraw and cache if insertion was successful
+            if (!inserted) return;
             break;
           case this.insertionStrategy.replace:
             if (!this.multipleSelected) {
@@ -329,6 +346,16 @@ export class VariantQueryModelerComponent
       }
       this.cacheCurrentVariant();
     }
+  }
+
+  isInsideLockedGroup(selectedElement: any): boolean {
+    let parent = this.findParent(this.currentVariant, selectedElement);
+    let grandParent = this.findParent(this.currentVariant, parent);
+    return (
+      (parent instanceof OptionalGroup &&
+        grandParent instanceof ParallelGroup) ||
+      (parent instanceof RepeatGroup && grandParent instanceof ParallelGroup)
+    );
   }
 
   copyVariant(variant: VariantElement) {
@@ -345,33 +372,33 @@ export class VariantQueryModelerComponent
     }
   }
 
-  handleMultiParallelInsert(
-    variant: VariantElement,
-    leaf: VariantElement,
-    selectedElement
-  ) {
-    const parent = this.findParent(variant, selectedElement[0]);
-    const grandParent = this.findParent(variant, parent); // if parent is root, grandParent is null
-    const children = parent.getElements();
-    if (
-      children.length === selectedElement.length &&
-      grandParent &&
-      grandParent instanceof ParallelGroup
-    ) {
-      const parentSiblings = grandParent.getElements();
-      parentSiblings.splice(0, 0, leaf);
-      grandParent.setElements(parentSiblings);
-    } else {
-      const index = children.indexOf(selectedElement[0]);
-      const newParent = new ParallelGroup([
-        leaf,
-        new SequenceGroup(selectedElement),
-      ]);
-      children.splice(index, selectedElement.length);
-      children.splice(index, 0, newParent);
-      parent.setElements(children);
-    }
-  }
+  // handleMultiParallelInsert(
+  //   variant: VariantElement,
+  //   leaf: VariantElement,
+  //   selectedElement
+  // ) {
+  //   const parent = this.findParent(variant, selectedElement[0]);
+  //   const grandParent = this.findParent(variant, parent); // if parent is root, grandParent is null
+  //   const children = parent.getElements();
+  //   if (
+  //     children.length === selectedElement.length &&
+  //     grandParent &&
+  //     grandParent instanceof ParallelGroup
+  //   ) {
+  //     const parentSiblings = grandParent.getElements();
+  //     parentSiblings.splice(0, 0, leaf);
+  //     grandParent.setElements(parentSiblings);
+  //   } else {
+  //     const index = children.indexOf(selectedElement[0]);
+  //     const newParent = new ParallelGroup([
+  //       leaf,
+  //       new SequenceGroup(selectedElement),
+  //     ]);
+  //     children.splice(index, selectedElement.length);
+  //     children.splice(index, 0, newParent);
+  //     parent.setElements(children);
+  //   }
+  // }
 
   handleParallelInsert(
     variant: VariantElement,
@@ -379,46 +406,90 @@ export class VariantQueryModelerComponent
     selectedElement
   ) {
     const children = variant.getElements();
-    console.log('Handling parallel insert at variant:', variant);
-    if (variant instanceof ChoiceGroup || variant instanceof FallthroughGroup) {
-      this.fireAlert(
-        'Parallel Insertion Error',
-        'Cannot insert parallel activities into this group.',
-        'info'
-      );
-      return;
-    }
-
     if (children) {
       const index = children.indexOf(selectedElement);
       if (variant && variant === selectedElement) {
+        const parent = this.findParent(this.currentVariant, selectedElement);
+        if (
+          parent instanceof ChoiceGroup ||
+          parent instanceof FallthroughGroup
+        ) {
+          this.fireAlert(
+            'Parallel Group Error',
+            'Cannot insert Parallel Group into a Choice or Fallthrough Group.',
+            'info'
+          );
+          return false;
+        } else if (
+          (selectedElement instanceof RepeatGroup ||
+            selectedElement instanceof OptionalGroup) &&
+          selectedElement.getElements().length > 1
+        ) {
+          this.fireAlert(
+            'Parallel Group Error',
+            'Cannot create Parallel Group with an Optional or Repeat Group with multiple children.',
+            'info'
+          );
+          return false;
+        }
         variant.setElements([
           new ParallelGroup([leaf, new SequenceGroup(children)]),
         ]);
+        return true;
       } else if (index > -1) {
         // Handle parent ParallelGroup
         if (variant instanceof ParallelGroup) {
           children.splice(index, 0, leaf);
+          return true;
         } else {
           // If the selected element is a parallel group, insert into its children
           if (selectedElement instanceof ParallelGroup) {
             selectedElement.getElements().push(leaf);
+            return true;
 
             // Else create a new parallel group for leaf and selected
           } else {
+            const parent = this.findParent(
+              this.currentVariant,
+              selectedElement
+            );
+            if (
+              parent instanceof ChoiceGroup ||
+              parent instanceof FallthroughGroup
+            ) {
+              this.fireAlert(
+                'Parallel Group Error',
+                'Cannot insert Parallel Group into a Choice or Fallthrough Group.',
+                'info'
+              );
+              return false;
+            } else if (
+              (selectedElement instanceof RepeatGroup ||
+                selectedElement instanceof OptionalGroup) &&
+              selectedElement.getElements().length > 1
+            ) {
+              this.fireAlert(
+                'Parallel Group Error',
+                'Cannot create Parallel Group with an Optional or Repeat Group with multiple children.',
+                'info'
+              );
+              return false;
+            }
             children.splice(
               index,
               1,
               new ParallelGroup([leaf, selectedElement])
             );
+            return true;
           }
         }
       } else {
         for (const child of children) {
-          this.handleParallelInsert(child, leaf, selectedElement);
+          return this.handleParallelInsert(child, leaf, selectedElement);
         }
       }
     }
+    return false;
   }
 
   handleBehindInsert(
@@ -457,7 +528,6 @@ export class VariantQueryModelerComponent
               selectedChildren.push(leaf);
             }
           }
-
         } else {
           children.splice(index + 1, 0, leaf);
         }
@@ -582,7 +652,6 @@ export class VariantQueryModelerComponent
    *  - Cannot be direct child of FallthroughGroup or ChoiceGroup
    *  - Cannot be nested within a single parent RepeatGroup
    *  - Cannot be applied in/on single OptionalGroup
-   *  - Cannot be direct child of ParallelGroup
    */
   onOptionalSelected() {
     const selectedElements = this.variantEnrichedSelection
@@ -605,7 +674,10 @@ export class VariantQueryModelerComponent
 
     const children = parent.getElements();
 
-    if (parent instanceof RepeatGroup && children.length === selectedElements.length) {
+    if (
+      parent instanceof RepeatGroup &&
+      children.length === selectedElements.length
+    ) {
       this.fireAlert(
         'Optional Group Error',
         'Optional groups cannot be single children of Repeat Groups.',
@@ -614,7 +686,10 @@ export class VariantQueryModelerComponent
       return;
     }
 
-    if (parent instanceof OptionalGroup && children.length === selectedElements.length) {
+    if (
+      parent instanceof OptionalGroup &&
+      children.length === selectedElements.length
+    ) {
       this.fireAlert(
         'Optional Group Error',
         'Optional groups cannot be single children of Optional Groups.',
@@ -623,18 +698,55 @@ export class VariantQueryModelerComponent
       return;
     }
 
-    if (parent instanceof FallthroughGroup || parent instanceof ChoiceGroup || parent instanceof ParallelGroup) {
+    if (parent instanceof FallthroughGroup || parent instanceof ChoiceGroup) {
       this.fireAlert(
         'Optional Group Error',
-        'Cannot apply optional groups within Fallthrough, Choice, or Parallel Groups.',
+        'Cannot apply optional groups within Fallthrough or Choice groups.',
         'info'
       );
       return;
     }
 
+    // Check if parent is a ParallelGroup - special constraints apply
+    if (parent instanceof ParallelGroup) {
+      // Only allow single element to be made optional
+      if (selectedElements.length > 1) {
+        this.fireAlert(
+          'Optional Group Error',
+          'Optional groups within a Parallel group can only contain a single child.',
+          'info'
+        );
+        return;
+      }
+      // Cannot wrap SequenceGroup or ParallelGroup in OptionalGroup within ParallelGroup
+      if (
+        selectedElements[0] instanceof SequenceGroup ||
+        selectedElements[0] instanceof ParallelGroup
+      ) {
+        this.fireAlert(
+          'Optional Group Error',
+          'Cannot make Sequence or Parallel groups optional within a Parallel group.',
+          'info'
+        );
+        return;
+      }
+      // Cannot apply optional on existing OptionalGroup or RepeatGroup within ParallelGroup
+      if (
+        selectedElements[0] instanceof OptionalGroup ||
+        selectedElements[0] instanceof RepeatGroup
+      ) {
+        this.fireAlert(
+          'Optional Group Error',
+          'Cannot apply optional to Optional or Repeat groups within a Parallel group.',
+          'info'
+        );
+        return;
+      }
+    }
+
     if (
       selectedElements.length === 1 &&
-      selectedElements[0] instanceof OptionalGroup 
+      selectedElements[0] instanceof OptionalGroup
     ) {
       this.fireAlert(
         'Optional Group Error',
@@ -666,9 +778,15 @@ export class VariantQueryModelerComponent
     children.splice(first_idx, selectedElements.length);
 
     const operator = new OptionalGroup(selectedElements as VariantElement[]);
+    operator.parent = parent;
 
     children.splice(first_idx, 0, operator);
     parent.setElements(children);
+
+    // Sort if parent is a ParallelGroup
+    if (parent instanceof ParallelGroup) {
+      this.sortParallel(parent);
+    }
 
     this.cacheCurrentVariant();
     this.triggerRedraw();
@@ -679,9 +797,8 @@ export class VariantQueryModelerComponent
    *  - Cannot be direct child of FallthroughGroup or ChoiceGroup
    *  - Cannot be applied on top of OptionalGroup
    *  - Cannot be applied on single RepeatGroup
-   *  - Cannot be direct child of ParallelGroup
    */
-  onRepeatableSelected(){
+  onRepeatableSelected() {
     const selectedElements = this.variantEnrichedSelection
       .selectAll('.selected-variant-g')
       .data();
@@ -703,7 +820,10 @@ export class VariantQueryModelerComponent
     const children = parent.getElements();
 
     // If our selection is within an R, we do not allow nesting
-    if (parent instanceof RepeatGroup && selectedElements.length === children.length) {
+    if (
+      parent instanceof RepeatGroup &&
+      selectedElements.length === children.length
+    ) {
       this.fireAlert(
         'Repeat Group Error',
         'Repeat groups cannot be single children of Repeat Groups.',
@@ -712,13 +832,50 @@ export class VariantQueryModelerComponent
       return;
     }
 
-    if (parent instanceof FallthroughGroup || parent instanceof ChoiceGroup || parent instanceof ParallelGroup) {
+    if (parent instanceof FallthroughGroup || parent instanceof ChoiceGroup) {
       this.fireAlert(
         'Repeat Group Error',
-        'Cannot apply repeat Repeat Groups within Fallthrough, Choice, or Parallel Groups.',
+        'Cannot apply repeat Repeat Groups within Fallthrough or Choice Groups.',
         'info'
       );
       return;
+    }
+
+    // Check if parent is a ParallelGroup - special constraints apply
+    if (parent instanceof ParallelGroup) {
+      // Only allow single element to be made repeatable
+      if (selectedElements.length > 1) {
+        this.fireAlert(
+          'Repeat Group Error',
+          'Repeat groups within a Parallel group can only contain a single child.',
+          'info'
+        );
+        return;
+      }
+      // Cannot wrap SequenceGroup or ParallelGroup in RepeatGroup within ParallelGroup
+      if (
+        selectedElements[0] instanceof SequenceGroup ||
+        selectedElements[0] instanceof ParallelGroup
+      ) {
+        this.fireAlert(
+          'Repeat Group Error',
+          'Cannot make Sequence or Parallel groups repeatable within a Parallel group.',
+          'info'
+        );
+        return;
+      }
+      // Cannot apply repeatable on existing OptionalGroup or RepeatGroup within ParallelGroup
+      if (
+        selectedElements[0] instanceof OptionalGroup ||
+        selectedElements[0] instanceof RepeatGroup
+      ) {
+        this.fireAlert(
+          'Repeat Group Error',
+          'Cannot apply repeat to Optional or Repeat groups within a Parallel group.',
+          'info'
+        );
+        return;
+      }
     }
 
     if (
@@ -767,9 +924,15 @@ export class VariantQueryModelerComponent
     children.splice(first_idx, selectedElements.length);
 
     const operator = new RepeatGroup(selectedElements as VariantElement[]);
+    operator.parent = parent;
 
     children.splice(first_idx, 0, operator);
     parent.setElements(children);
+
+    // Sort if parent is a ParallelGroup
+    if (parent instanceof ParallelGroup) {
+      this.sortParallel(parent);
+    }
 
     this.cacheCurrentVariant();
     this.triggerRedraw();
@@ -778,6 +941,7 @@ export class VariantQueryModelerComponent
   /** Handler for ChoiceGroup creation
    *  Constraints:
    *  - Only a single LeafNode/WildcardNode can be selected
+   *  - Cannot be inserted into
    */
   onChoiceSelected() {
     const selectedElements = this.variantEnrichedSelection
@@ -792,32 +956,53 @@ export class VariantQueryModelerComponent
       );
       return;
     }
+
+    if (selectedElements.length > 1) {
+      this.fireAlert(
+        'Selection Error',
+        'Please select just one activity to apply to.',
+        'info'
+      );
+      return;
+    }
+
+    const leaf = selectedElements[0] as VariantElement;
+    const parent = this.findParent(this.currentVariant, leaf);
+
+    if (!parent) return;
+    else if (
+      parent instanceof FallthroughGroup ||
+      parent instanceof ChoiceGroup
+    ) {
+      this.fireAlert(
+        'Choice Group Error',
+        'Cannot insert Group into a Fallthrough or Choice Group.',
+        'info'
+      );
+      return;
+    }
+
     // If selection is a single LeafNode/WildcardNode, replace it by a ChoiceGroup containing that element
     if (
       selectedElements.length === 1 &&
-      (selectedElements[0] instanceof LeafNode || 
+      (selectedElements[0] instanceof LeafNode ||
         selectedElements[0] instanceof WildcardNode)
     ) {
-      const leaf = selectedElements[0] as VariantElement;
-      const parent = this.findParent(this.currentVariant, leaf);
-      if (!parent) return;
-      else if (parent instanceof FallthroughGroup) {
-        this.fireAlert(
-          'Choice Group Error',
-          'Cannot insert Group into a Fallthrough Group.',
-          'info'
-        );
-        return;
-      }
-
       const children = parent.getElements();
       const idx = children.indexOf(leaf);
       if (idx === -1) return;
 
       // Replace the leaf with a ChoiceGroup containing the leaf and an empty LeafNode
       const choice = new ChoiceGroup([leaf]);
+      choice.parent = parent;
       children.splice(idx, 1, choice);
       parent.setElements(children);
+
+      // Sort if parent is a ParallelGroup
+      if (parent instanceof ParallelGroup) {
+        this.sortParallel(parent);
+      }
+
       this.cacheCurrentVariant();
       this.triggerRedraw();
       return;
@@ -858,6 +1043,16 @@ export class VariantQueryModelerComponent
       this.fireAlert(
         'Fallthrough Group Error',
         'Cannot insert group into a Choice or Parallel Group.',
+        'info'
+      );
+      return;
+    }
+
+    // Check if parent is a ParallelGroup - special constraints apply
+    if (this.isInsideLockedGroup(selectedElements[0])) {
+      this.fireAlert(
+        'Fallthrough Group Error',
+        'Cannot modify Optional or Repeat groups that are children of a Parallel group.',
         'info'
       );
       return;
@@ -992,7 +1187,7 @@ export class VariantQueryModelerComponent
     });
   }
 
-   /** Handler for Start/End node creation
+  /** Handler for Start/End node creation
    *  Constraints:
    *  - Cannot have more than one Start or End node in a variant
    *  - Start node must be at the beginning of the variant
@@ -1050,6 +1245,16 @@ export class VariantQueryModelerComponent
           .selectAll('.selected-variant-g')
           .data()[0];
 
+        // Check if trying to insert into a locked Optional/Repeat group within ParallelGroup
+        if (this.isInsideLockedGroup(selectedElement)) {
+          this.fireAlert(
+            'Insertion Error',
+            'Cannot modify Optional or Repeat groups that are children of a Parallel group.',
+            'info'
+          );
+          return;
+        }
+
         switch (this.selectedStrategy) {
           case this.insertionStrategy.infront:
             if (!this.multipleSelected) {
@@ -1084,23 +1289,30 @@ export class VariantQueryModelerComponent
             }
             break;
           case this.insertionStrategy.parallel:
+            let inserted = false;
             if (!this.multipleSelected) {
-              this.handleParallelInsert(
+              inserted = this.handleParallelInsert(
                 this.currentVariant,
                 leaf,
                 selectedElement
               );
-            } else {
-              const selectedElements = this.variantEnrichedSelection
-                .selectAll('.selected-variant-g')
-                .data();
-              this.handleMultiParallelInsert(
-                this.currentVariant,
-                leaf,
-                selectedElements
-              );
             }
-            this.sortParallel(this.findParent(this.currentVariant, leaf));
+            // else {
+            //   const selectedElements = this.variantEnrichedSelection
+            //     .selectAll('.selected-variant-g')
+            //     .data();
+            //   this.handleMultiParallelInsert(
+            //     this.currentVariant,
+            //     leaf,
+            //     selectedElements
+            //   );
+            //   inserted = true;
+            // }
+            if (inserted) {
+              this.sortParallel(this.findParent(this.currentVariant, leaf));
+            }
+            // Only proceed with redraw and cache if insertion was successful
+            if (!inserted) return;
             break;
           case this.insertionStrategy.replace:
             if (!this.multipleSelected) {
@@ -1288,7 +1500,39 @@ export class VariantQueryModelerComponent
     } else if (node2 instanceof SequenceGroup) {
       return true;
     } else {
-      return node1.asLeafNode().activity[0] > node2.asLeafNode().activity[0];
+      // Check if node1 is a LeafNode
+      if (
+        node1 instanceof LeafNode ||
+        node1 instanceof WildcardNode ||
+        node1 instanceof AnythingNode
+      ) {
+        // Check if node2 is also a LeafNode
+        if (
+          node2 instanceof LeafNode ||
+          node2 instanceof WildcardNode ||
+          node2 instanceof AnythingNode
+        ) {
+          return (
+            node1.asLeafNode().activity[0] > node2.asLeafNode().activity[0]
+          );
+        } else {
+          // node1 is leaf, node2 is a group -> leaf comes after groups
+          return true;
+        }
+      } else {
+        // node1 is a group (Choice, Optional, Repeat, etc.)
+        if (
+          node2 instanceof LeafNode ||
+          node2 instanceof WildcardNode ||
+          node2 instanceof AnythingNode
+        ) {
+          // node1 is group, node2 is leaf -> group comes before leaves
+          return false;
+        } else {
+          // Both are groups - maintain current order
+          return false;
+        }
+      }
     }
   }
 

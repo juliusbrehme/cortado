@@ -42,7 +42,6 @@ def query_pattern(query: visualQuery):
     print("Deserialized pattern:", pattern)
     query_type = QueryType[query.type]
     query = create_query_instance(pattern, query_type=query_type)
-    #print("Variants in cache:", cache.variants)
     result = evaluate_visual_query_against_variant_graphs(query, cache.variants)
     print("Query result:", result)
     return result

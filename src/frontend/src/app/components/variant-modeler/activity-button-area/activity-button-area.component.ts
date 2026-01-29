@@ -47,7 +47,10 @@ export class ActivityButtonAreaComponent
   @Input()
   redrawSingal: boolean = false;
 
-  activityDummyVariants: Map<string, VariantElement> = new Map<string,VariantElement>();
+  activityDummyVariants: Map<string, VariantElement> = new Map<
+    string,
+    VariantElement
+  >();
 
   @Output()
   activityButtonClick = new EventEmitter();

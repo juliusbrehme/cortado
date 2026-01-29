@@ -395,7 +395,6 @@ export class BackendService {
 
   variantQuery(query: string): Observable<any> {
     const queryBody = { queryString: query };
-    console.log('Sending variant query:', queryBody);
     return this.httpClient.post(
       ROUTES.HTTP_BASE_URL + ROUTES.QUERY + 'variant-query',
       queryBody

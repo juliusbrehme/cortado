@@ -5,6 +5,7 @@ import {
   setParent,
   updateSelectionAttributesForGroup,
 } from './infix_selection';
+import { Choice } from 'src/app/components/variant-miner/variant-miner.component';
 
 export class PerformanceStats {
   public min: number;
@@ -63,7 +64,8 @@ export abstract class VariantElement {
         variantElement instanceof ParallelGroup) ||
       (this instanceof LoopGroup && variantElement instanceof LoopGroup) ||
       (this instanceof RepeatGroup && variantElement instanceof RepeatGroup) ||
-      (this instanceof OptionalGroup && variantElement instanceof OptionalGroup) ||
+      (this instanceof OptionalGroup &&
+        variantElement instanceof OptionalGroup) ||
       (this instanceof SkipGroup && variantElement instanceof SkipGroup) ||
       (this instanceof LeafNode && variantElement instanceof LeafNode) ||
       (this instanceof WaitingTimeNode &&
@@ -531,7 +533,6 @@ export class RepeatGroup extends VariantElement {
     return this.repeatCountMax;
   }
 
-
   public getActivities(): Set<string> {
     const res: Set<string> = new Set<string>();
 
@@ -636,6 +637,7 @@ export class RepeatGroup extends VariantElement {
 
   public copy(): RepeatGroup {
     const res = new RepeatGroup(this.elements.map((e) => e.copy()));
+    res.parent = this.parent;
     res.expanded = this.expanded;
     res.repeatCountMin = this.repeatCountMin;
     res.repeatCountMax = this.repeatCountMax;
@@ -643,6 +645,20 @@ export class RepeatGroup extends VariantElement {
   }
 
   public updateWidth(includeWaiting) {
+    if (this.parent instanceof ParallelGroup) {
+      for (const el of this.elements) {
+        if (el instanceof ChoiceGroup) {
+          el.width =
+            this.width - VARIANT_Constants.MARGIN_X - 2 * this.getHeadLength();
+        } else {
+          el.width =
+            this.width -
+            2 * VARIANT_Constants.MARGIN_X -
+            2 * this.getHeadLength();
+        }
+      }
+    }
+
     for (const el of this.elements) {
       el.updateWidth(includeWaiting);
     }
@@ -657,9 +673,8 @@ export class RepeatGroup extends VariantElement {
       this.height += this.getMarginY() * 2;
 
     this.height +=
-        2 * VARIANT_Constants.MARGIN_Y +
-        2 * VARIANT_Constants.FONT_SIZE_OPERATOR;
-    
+      2 * VARIANT_Constants.MARGIN_Y + 2 * VARIANT_Constants.FONT_SIZE_OPERATOR;
+
     return this.height;
   }
 
@@ -674,9 +689,9 @@ export class RepeatGroup extends VariantElement {
         2 * this.getMarginX() +
         this.getHeadLength() -
         this.elements[0].getHeadLength();
-    
+
     this.width += 2 * VARIANT_Constants.MARGIN_X;
-    
+
     return this.width;
   }
 
@@ -689,10 +704,14 @@ export class RepeatGroup extends VariantElement {
       filterElements = [parentSequence];
     }
     const elements = filterElements
-        .map((e) => e.serialize(l))
-        .flat()
-        .filter((e) => e !== null);
-    parent = { loop: elements, repeat_count_min: this.repeatCountMin, repeat_count_max: this.repeatCountMax };
+      .map((e) => e.serialize(l))
+      .flat()
+      .filter((e) => e !== null);
+    parent = {
+      loop: elements,
+      repeat_count_min: this.repeatCountMin,
+      repeat_count_max: this.repeatCountMax,
+    };
     return parent;
   }
 
@@ -717,7 +736,6 @@ export class RepeatGroup extends VariantElement {
 }
 
 export class OptionalGroup extends VariantElement {
-
   public getActivities(): Set<string> {
     const res: Set<string> = new Set<string>();
 
@@ -822,11 +840,26 @@ export class OptionalGroup extends VariantElement {
 
   public copy(): OptionalGroup {
     const res = new OptionalGroup(this.elements.map((e) => e.copy()));
+    res.parent = this.parent;
     res.expanded = this.expanded;
     return res;
   }
 
   public updateWidth(includeWaiting) {
+    if (this.parent instanceof ParallelGroup) {
+      for (const el of this.elements) {
+        if (el instanceof ChoiceGroup) {
+          el.width =
+            this.width - VARIANT_Constants.MARGIN_X - 2 * this.getHeadLength();
+        } else {
+          el.width =
+            this.width -
+            2 * VARIANT_Constants.MARGIN_X -
+            2 * this.getHeadLength();
+        }
+      }
+    }
+
     for (const el of this.elements) {
       el.updateWidth(includeWaiting);
     }
@@ -841,8 +874,7 @@ export class OptionalGroup extends VariantElement {
       this.height += this.getMarginY() * 2;
 
     this.height +=
-        2 * VARIANT_Constants.MARGIN_Y +
-        2 * VARIANT_Constants.FONT_SIZE_OPERATOR;
+      2 * VARIANT_Constants.MARGIN_Y + 2 * VARIANT_Constants.FONT_SIZE_OPERATOR;
     return this.height;
   }
 
@@ -870,9 +902,9 @@ export class OptionalGroup extends VariantElement {
       filterElements = [parentSequence];
     }
     const elements = filterElements
-        .map((e) => e.serialize(l))
-        .flat()
-        .filter((e) => e !== null);
+      .map((e) => e.serialize(l))
+      .flat()
+      .filter((e) => e !== null);
     parent = { optional: elements };
     return parent;
   }
@@ -1245,7 +1277,7 @@ export class ChoiceGroup extends VariantElement {
   }
 
   public setCollapsed(collapsed: boolean) {
-    this.isCollapsed = collapsed
+    this.isCollapsed = collapsed;
   }
 
   public toggleCollapsed() {
@@ -1352,6 +1384,7 @@ export class ChoiceGroup extends VariantElement {
 
   public copy(): ChoiceGroup {
     const res = new ChoiceGroup(this.elements.map((e) => e.copy()));
+    res.parent = this.parent;
     res.expanded = this.expanded;
     return res;
   }
@@ -1745,7 +1778,6 @@ export class LeafNode extends VariantElement {
       this.width * 0.75 + this.getHeadLength() * 2,
       this.width - this.getHeadLength() * 2
     );
-
     return this.width;
   }
 
