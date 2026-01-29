@@ -127,7 +127,7 @@ export class VariantQueryModelerComponent
   redundancyWarning = false;
 
   // Query type selection for visual pattern matching
-  public queryType: 'BFS' | 'DFS' | 'RELAXED_NG' | 'VM' | 'VM_LAZY' = 'BFS';
+  public queryType: 'BFS' | 'DFS' | 'VM' | 'VM_LAZY' = 'BFS';
 
   // Preview mode for logic tree
   public previewMode: boolean = false;
@@ -520,7 +520,6 @@ export class VariantQueryModelerComponent
             }
           }
 
-          // Else the variant is a SequenceGroup and we can simply insert after the selected Element
         } else {
           children.splice(index + 1, 0, leaf);
         }
@@ -1665,8 +1664,6 @@ export class VariantQueryModelerComponent
       if (node) {
         // Deep clone to ensure we capture the current state
         node.variantElement = cloneDeep(this.currentVariant);
-        // Ensure preview is collapsed in logic tree
-        node.variantElement?.setExpanded(false);
       }
     }
   }

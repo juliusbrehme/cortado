@@ -31,7 +31,7 @@
             <svg 
                 class="query-preview"
                 appVariantDrawer
-                [variant]="{ variant: node.variantElement }"
+                [variant]="{ variant: getCollapsedVariantCopy(node) }"
                 [computeActivityColor]="computeActivityColor"
                 [traceInfixSelectionMode]="false"
                 [keepStandardView]="true"
@@ -90,7 +90,7 @@
         </button>
 
         <button class="menu-item query-item" (click)="selectOperator('query')">
-          <span class="icon">Q</span>
+          <span class="icon"><i class="bi bi-search btn-icon"></i></span>
           <span class="label">Query</span>
         </button>
       </div>

@@ -1360,7 +1360,7 @@ export class VariantDrawerDirective
       laElement.parent !== null &&
       laElement.infixSelectableState !== SelectableState.None;
 
-    const color = 'lightgrey';
+    const color = 'lightgray';
     let polygon = this.createPolygon(
       parent,
       polygonPoints,
@@ -2242,8 +2242,6 @@ export class VariantDrawerDirective
     maxWidth: number
   ): boolean {
     let textLength = this.getComputedTextLength(textSelection);
-    //let textLength = textSelection.node().getBoundingClientRect().width;
-    console.log('Inner Text length before Wrap', text, textLength, maxWidth);
 
     let truncated = false;
     while (textLength > maxWidth && text.length > 1) {
@@ -2253,12 +2251,8 @@ export class VariantDrawerDirective
       }
       textSelection.text(text + '..');
       textLength = this.getComputedTextLength(textSelection);
-      console.log(text, textLength, maxWidth);
-      //textLength = textSelection.node().getBoundingClientRect().width;
       truncated = true;
     }
-
-    console.log('Final Text after Wrap', textSelection.text());
 
     if (text === 'W_Nabellen incomplete dossiers' && !truncated) {
       console.log('Inner Text length after Wrap', text, textLength, maxWidth);

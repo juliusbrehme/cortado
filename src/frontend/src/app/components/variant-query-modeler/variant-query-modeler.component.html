@@ -81,18 +81,6 @@
         <button
           ngbDropdownItem
           class="dropdown-item"
-          (click)="queryType = 'RELAXED_NG'"
-          [ngClass]="queryType === 'RELAXED_NG' ? 'strategy-selected' : ''"
-          [disabled]="currentEditingQueryId === null"
-          ngbTooltip="RELAXED_NG Algorithm"
-          triggers="hover"
-          container="body"
-        >
-          RELAXED_NG
-        </button>
-        <button
-          ngbDropdownItem
-          class="dropdown-item"
           (click)="queryType = 'VM'"
           [ngClass]="queryType === 'VM' ? 'strategy-selected' : ''"
           [disabled]="currentEditingQueryId === null"

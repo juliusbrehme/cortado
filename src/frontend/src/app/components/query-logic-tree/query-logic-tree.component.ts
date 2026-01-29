@@ -10,6 +10,11 @@ import {
   OnDestroy,
 } from '@angular/core';
 import {
+  ChoiceGroup,
+  LoopGroup,
+  OptionalGroup,
+  ParallelGroup,
+  SequenceGroup,
   VariantElement,
   WildcardNode,
 } from 'src/app/objects/Variants/variant_element';
@@ -18,6 +23,7 @@ import { ColorMapService } from '../../services/colorMapService/color-map.servic
 import { VariantDrawerDirective } from 'src/app/directives/variant-drawer/variant-drawer.directive';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
+import { Choice } from '../variant-miner/variant-miner.component';
 
 export type TreeNodeType = 'plus' | 'and' | 'or' | 'query';
 
@@ -208,7 +214,7 @@ export class QueryLogicTreeComponent implements OnInit, OnDestroy {
       case 'or':
         return '∨';
       case 'query':
-        return 'Q';
+        return 'Q'; // Icon rendered via template
       default:
         return '?';
     }
@@ -228,6 +234,35 @@ export class QueryLogicTreeComponent implements OnInit, OnDestroy {
   public recenterAfterUpdate() {
     this.calculateLayout(this.rootNode, this.initialX, this.initialY);
     this.centerTree(0);
+  }
+
+  getCollapsedVariantCopy(node: LogicTreeNode): VariantElement | null {
+    if (!node.variantElement) return null;
+
+    // Set choice groups to collapsed state
+
+    // Create a copy of the variant element
+    const copy = node.variantElement.copy();
+    copy.setExpanded(false);
+
+  
+    this.traverseVariantElements([copy]);
+    
+    return copy;
+  }
+
+  traverseVariantElements(elements: VariantElement[]) {
+    elements.forEach((el) => {
+      if (el instanceof ChoiceGroup) {
+        el.asChoiceGroup().setCollapsed(true);
+      }
+      if (el instanceof ParallelGroup 
+        || el instanceof SequenceGroup 
+        || el instanceof LoopGroup 
+        || el instanceof OptionalGroup) {
+        this.traverseVariantElements(el.getElements());
+      }
+    });
   }
 
   getPreviewTransform(node: LogicTreeNode): string {
