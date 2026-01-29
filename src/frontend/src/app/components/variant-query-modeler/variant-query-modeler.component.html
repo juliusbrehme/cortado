@@ -515,121 +515,15 @@
           [variant]="{ variant: currentVariant }"
           [contextMenuComponent]="contextMenuComponent"
           (selection)="handleRedraw($event)"
-          (operatorAction)="onOperatorAction($event)"
           [computeActivityColor]="computeActivityColor"
-          [infixType]="curInfixType"
           [keepStandardView]="true"
           class="zoom-group-variant in-variant-modeler"
           [style.display]="currentEditingQueryId !== null ? 'block' : 'none'">
         </svg>
       </app-zoom-field>
       <div class="no-selection-message" *ngIf="currentEditingQueryId === null">
-        <p>Select a variant query from the tree to edit</p>
+        <p>Select a variant query from the tree to start editing</p>
       </div>
     </div>
   </div>
-  <!-- floating editor for operator (loop size) -->
-  <div
-    *ngIf="editorVisible"
-    class="floating-editor"
-    [ngStyle]="{ left: editorX + 'px', top: editorY + 'px' }"
-  >
-    <div class="input-group input-group-sm">
-      <input type="number" class="form-control" [(ngModel)]="editorValue" />
-      <button class="btn btn-primary btn-sm" (click)="applyEditor()">OK</button>
-      <button class="btn btn-secondary btn-sm" (click)="cancelEditor()">✕</button>
-    </div>
-  </div>
-  <div class="redundancy-warning" @fadeIn *ngIf="redundancyWarning">
-    This variant already exists
-  </div>
 </div>
-
-<svg>
-  <symbol
-    xmlns="http://www.w3.org/2000/svg"
-    width="20"
-    height="20"
-    id="variantChevron"
-    transform-origin="10 10"
-  >
-    <path
-      fill="white"
-      fill-rule="evenodd"
-      d="M3.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L9.293 8 3.646 2.354a.5.5 0 0 1 0-.708z"
-    />
-    <path
-      fill="white"
-      fill-rule="evenodd"
-      d="M7.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L13.293 8 7.646 2.354a.5.5 0 0 1 0-.708z"
-    />
-    <path
-      fill="white"
-      fill-rule="evenodd"
-      d="M11.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L17.293 8 11.646 2.354a.5.5 0 0 1 0-.708z"
-    />
-  </symbol>
-
-  <symbol
-    xmlns="http://www.w3.org/2000/svg"
-    width="20"
-    height="20"
-    id="prefixChevron"
-    transform-origin="10 10"
-  >
-    <path
-      fill="white"
-      fill-rule="evenodd"
-      d="M-1.354 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L4.293 8 -1.354 2.354a.5.5 0 0 1 0-.708z"
-      transform="translate(1 1)"
-    ></path>
-    <g>
-      <circle r="1" fill="white" transform="translate(10 9)" />
-      <circle r="1" fill="white" transform="translate(14 9)" />
-      <circle r="1" fill="white" transform="translate(18 9)" />
-    </g>
-  </symbol>
-  <symbol
-    xmlns="http://www.w3.org/2000/svg"
-    width="35"
-    height="20"
-    id="infixChevron"
-    transform-origin="10 10"
-  >
-    <g>
-      <circle r="1" fill="white" transform="translate(2 9)" />
-      <circle r="1" fill="white" transform="translate(6 9)" />
-      <circle r="1" fill="white" transform="translate(10 9)" />
-    </g>
-    <path
-      fill="white"
-      fill-rule="evenodd"
-      d="M-1.354 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L4.293 8 -1.354 2.354a.5.5 0 0 1 0-.708z"
-      transform="translate(14 1)"
-    ></path>
-    <g>
-      <circle r="1" fill="white" transform="translate(24 9)" />
-      <circle r="1" fill="white" transform="translate(28 9)" />
-      <circle r="1" fill="white" transform="translate(32 9)" />
-    </g>
-  </symbol>
-  <symbol
-    xmlns="http://www.w3.org/2000/svg"
-    width="20"
-    height="20"
-    id="postfixChevron"
-    transform-origin="10 10"
-  >
-    <g>
-      <circle r="1" fill="white" transform="translate(1 9)" />
-      <circle r="1" fill="white" transform="translate(5 9)" />
-      <circle r="1" fill="white" transform="translate(9 9)" />
-    </g>
-    <path
-      fill="white"
-      fill-rule="evenodd"
-      d="M-1.354 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L4.293 8 -1.354 2.354a.5.5 0 0 1 0-.708z"
-      transform="translate(13 1)"
-    ></path>
-  </symbol>
-</svg>

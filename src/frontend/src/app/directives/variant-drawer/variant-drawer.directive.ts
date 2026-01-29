@@ -370,7 +370,6 @@ export class VariantDrawerDirective
   
   if (type === "repeat") {
     if (!defs.select("#repeat-loops").empty()) return;
-    
 
     const pat = defs.append("pattern")
       .attr("id", "repeat-loops")
@@ -422,9 +421,42 @@ export class VariantDrawerDirective
       .attr("font-size", d => d.s)
       .attr("opacity", d => d.o)
       .text("?");
-    }
+  }  else if (type === "fallthrough") {
+    if (!defs.select("#fallthrough-arrows").empty()) return;
+    const tile = 80;
+    const marks = [
+      { x: 5, y: 15, s: 19, o: 0.4 },
+      { x: 15, y: 35, s: 17, o: 0.4 },
+      { x: 35, y: 55, s: 14, o: 0.4 },
+      { x: 65, y: 30, s: 12, o: 0.4 },
+      { x: 55, y: 55, s: 12, o: 0.4 },
+      { x: 25, y: 75, s: 14, o: 0.4 },
+    ];
+    const pat = defs.append("pattern")
+      .attr("id", "fallthrough-arrows")
+      .attr("patternUnits", "userSpaceOnUse") // <- keeps tile size constant
+      .attr("width", tile)
+      .attr("height", tile);
 
-    else if (type === "wildcard") {
+    pat.append("rect")
+      .attr("width", tile)
+      .attr("height", tile)
+      .attr("fill", "lightgray")
+      .attr("opacity", 1);
+
+    pat.selectAll("text.fa")
+      .data(marks)
+      .enter()
+      .append("text")
+      .attr("class", "fa")
+      .attr("x", d => d.x)
+      .attr("y", d => d.y)
+      .attr("fill", "#383838")
+      .attr("font-size", d => d.s)
+      .attr("opacity", d => d.o)
+      .text("⇆");
+
+  } else if (type === "wildcard") {
     if (!defs.select("#wildcard-pattern").empty()) return;
     const tile = 20;
     
@@ -1360,7 +1392,7 @@ export class VariantDrawerDirective
       laElement.parent !== null &&
       laElement.infixSelectableState !== SelectableState.None;
 
-    const color = 'lightgray';
+    const color = 'lightgrey';
     let polygon = this.createPolygon(
       parent,
       polygonPoints,
@@ -1767,6 +1799,10 @@ export class VariantDrawerDirective
       actionable,
       true
     );
+
+    const svg = d3.select(this.svgHtmlElement.nativeElement) as any;
+    this.ensurePattern(svg, "fallthrough");
+    polygon.style("fill", "url(#fallthrough-arrows)");
 
     if (
       this.traceInfixSelectionMode &&

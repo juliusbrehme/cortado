@@ -19,16 +19,12 @@ import {
 } from '@angular/core';
 
 import { cloneDeep } from 'lodash';
-import { select, Selection } from 'd3';
-import * as objectHash from 'object-hash';
+import { Selection } from 'd3';
 import * as d3 from 'd3';
 import { LogService } from 'src/app/services/logService/log.service';
 import { LayoutChangeDirective } from 'src/app/directives/layout-change/layout-change.directive';
 import { VariantDrawerDirective } from 'src/app/directives/variant-drawer/variant-drawer.directive';
-import { InfixType, setParent } from 'src/app/objects/Variants/infix_selection';
-import { FragmentStatistics, Variant } from 'src/app/objects/Variants/variant';
 import {
-  deserialize,
   LeafNode,
   ParallelGroup,
   SequenceGroup,
@@ -44,9 +40,8 @@ import {
 } from 'src/app/objects/Variants/variant_element';
 import { collapsingText, fadeInText } from 'src/app/animations/text-animations';
 import { findPathToSelectedNode } from 'src/app/objects/Variants/utility_functions';
-import { applyInverseStrokeToPoly } from 'src/app/utils/render-utils';
 import { Observable, of, Subject } from 'rxjs';
-import { first, takeUntil, tap } from 'rxjs/operators';
+import { takeUntil, tap } from 'rxjs/operators';
 import { VariantFilterService } from 'src/app/services/variantFilterService/variant-filter.service';
 import {
   LogicTreeNode,
@@ -73,13 +68,6 @@ export class VariantQueryModelerComponent
 
   // Currently selected variant for editing with toolbar
   currentEditingQueryId: number | null = null;
-
-  // Floating operator editor state
-  editorVisible: boolean = false;
-  editorX: number = 0;
-  editorY: number = 0;
-  editorValue: number | string = '';
-  private editorTarget: any = null;
 
   activityNames: Array<String> = [];
 
@@ -111,9 +99,6 @@ export class VariantQueryModelerComponent
   multiSelect = false;
   multipleSelected = false;
 
-  infixType = InfixType;
-  curInfixType = InfixType.NOT_AN_INFIX;
-
   newLeaf;
 
   collapse: boolean = false;
@@ -124,10 +109,8 @@ export class VariantQueryModelerComponent
   variantEnrichedSelection: Selection<any, any, any, any>;
   zoom: any;
 
-  redundancyWarning = false;
-
   // Query type selection for visual pattern matching
-  public queryType: 'BFS' | 'DFS' | 'VM' | 'VM_LAZY' = 'BFS';
+  public queryType: 'BFS' | 'DFS' | 'VM' | 'VM_LAZY' = 'VM';
 
   // Preview mode for logic tree
   public previewMode: boolean = false;
@@ -260,47 +243,6 @@ export class VariantQueryModelerComponent
     }
 
     this.variantEnrichedSelection = selection;
-  }
-
-  onOperatorAction(event: any) {
-    if (!event || !event.action) return;
-    if (event.action === 'editLoopSize') {
-      const opGroup = event.element || (event.elements && event.elements[0]);
-      if (!opGroup) return;
-      this.editorTarget = opGroup;
-      this.editorValue =
-        (opGroup.operatorFlags && opGroup.operatorFlags.loopSize) || '';
-
-      const winX = event.clientX || window.innerWidth / 2;
-      const winY = event.clientY || window.innerHeight / 2;
-      this.editorX = Math.max(8, winX + 8);
-      this.editorY = Math.max(8, winY + 8);
-      this.editorVisible = true;
-      setTimeout(() => {
-        const el = document.querySelector(
-          '.floating-editor input'
-        ) as HTMLInputElement;
-        if (el) el.focus();
-      });
-    }
-  }
-
-  applyEditor() {
-    if (!this.editorTarget) return;
-    const n = Number(this.editorValue);
-    if (!isNaN(n) && n >= 0) {
-      if (!this.editorTarget.operatorFlags)
-        this.editorTarget.operatorFlags = {};
-      this.editorTarget.operatorFlags.loopSize = n;
-      if (this.variantDrawer) this.variantDrawer.redraw();
-    }
-    this.editorVisible = false;
-    this.editorTarget = null;
-  }
-
-  cancelEditor() {
-    this.editorVisible = false;
-    this.editorTarget = null;
   }
 
   handleActivityButtonClick(event) {
@@ -437,7 +379,7 @@ export class VariantQueryModelerComponent
     selectedElement
   ) {
     const children = variant.getElements();
-
+    console.log('Handling parallel insert at variant:', variant);
     if (variant instanceof ChoiceGroup || variant instanceof FallthroughGroup) {
       this.fireAlert(
         'Parallel Insertion Error',
@@ -477,10 +419,6 @@ export class VariantQueryModelerComponent
         }
       }
     }
-  }
-
-  handleInfixButtonClick(infixtype: InfixType) {
-    //this.curInfixType = infixtype;
   }
 
   handleBehindInsert(
@@ -644,6 +582,7 @@ export class VariantQueryModelerComponent
    *  - Cannot be direct child of FallthroughGroup or ChoiceGroup
    *  - Cannot be nested within a single parent RepeatGroup
    *  - Cannot be applied in/on single OptionalGroup
+   *  - Cannot be direct child of ParallelGroup
    */
   onOptionalSelected() {
     const selectedElements = this.variantEnrichedSelection
@@ -684,10 +623,10 @@ export class VariantQueryModelerComponent
       return;
     }
 
-    if (parent instanceof FallthroughGroup || parent instanceof ChoiceGroup) {
+    if (parent instanceof FallthroughGroup || parent instanceof ChoiceGroup || parent instanceof ParallelGroup) {
       this.fireAlert(
         'Optional Group Error',
-        'Cannot apply optional groups within Fallthrough or Choice Groups.',
+        'Cannot apply optional groups within Fallthrough, Choice, or Parallel Groups.',
         'info'
       );
       return;
@@ -740,6 +679,7 @@ export class VariantQueryModelerComponent
    *  - Cannot be direct child of FallthroughGroup or ChoiceGroup
    *  - Cannot be applied on top of OptionalGroup
    *  - Cannot be applied on single RepeatGroup
+   *  - Cannot be direct child of ParallelGroup
    */
   onRepeatableSelected(){
     const selectedElements = this.variantEnrichedSelection
@@ -772,10 +712,10 @@ export class VariantQueryModelerComponent
       return;
     }
 
-    if (parent instanceof FallthroughGroup || parent instanceof ChoiceGroup) {
+    if (parent instanceof FallthroughGroup || parent instanceof ChoiceGroup || parent instanceof ParallelGroup) {
       this.fireAlert(
         'Repeat Group Error',
-        'Cannot apply repeat Repeat Groups within Fallthrough or Choice Groups.',
+        'Cannot apply repeat Repeat Groups within Fallthrough, Choice, or Parallel Groups.',
         'info'
       );
       return;
@@ -892,6 +832,8 @@ export class VariantQueryModelerComponent
   /** Handler for FallthroughGroup creation
    *  Constraints:
    *  - Can not be child of ChoiceGroup
+   *  - Cannot be inserted into a FallthroughGroup
+   *  - Cannot be direct child of ParallelGroup
    *  - Can just contain LeafNodes
    */
   onFallthroughSelected() {
@@ -912,10 +854,10 @@ export class VariantQueryModelerComponent
     const parent = this.findParent(this.currentVariant, selectedElements[0]);
     if (!parent) return;
 
-    if (parent instanceof ChoiceGroup) {
+    if (parent instanceof ChoiceGroup || parent instanceof ParallelGroup) {
       this.fireAlert(
         'Fallthrough Group Error',
-        'Cannot insert group into a Choice Group.',
+        'Cannot insert group into a Choice or Parallel Group.',
         'info'
       );
       return;
@@ -1700,18 +1642,6 @@ export class VariantQueryModelerComponent
     if (this.editor) {
       this.editor.centerContent(0);
     }
-  }
-
-  private addStatistics(newVariant: Variant): Observable<any> {
-    if (newVariant.infixType !== InfixType.NOT_AN_INFIX) {
-      return this.backendService.countFragmentOccurrences(newVariant).pipe(
-        tap((statistics: FragmentStatistics) => {
-          newVariant.count = statistics.traceOccurrences;
-          newVariant.fragmentStatistics = statistics;
-        })
-      );
-    }
-    return of();
   }
 
   applySortOnVariantQueryModeler() {
