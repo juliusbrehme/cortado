@@ -485,7 +485,12 @@ export class VariantQueryModelerComponent
         }
       } else {
         for (const child of children) {
-          return this.handleParallelInsert(child, leaf, selectedElement);
+          const result = this.handleParallelInsert(
+            child,
+            leaf,
+            selectedElement
+          );
+          if (result) return result;
         }
       }
     }
