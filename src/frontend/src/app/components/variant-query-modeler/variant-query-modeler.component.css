@@ -200,5 +200,5 @@ select:active {
   display: flex;
   flex-wrap: wrap;
   max-height: 20px;
-  overflow: auto hidden;
+  overflow: visible;
 }
